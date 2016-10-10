@@ -262,6 +262,16 @@ config CPU_ARM1026
 	  Say Y if you want support for the ARM1026EJ-S processor.
 	  Otherwise, say N.
 
+# ARM926EJ-S
+config CPU_ARM926EJ_S
+	bool "Support ARM926EJ-S processor" if ARCH_PMB8876
+	select CPU_32v5
+	select CPU_ABRT_EV5TJ
+	select CPU_PABRT_LEGACY
+	help
+	  Say Y if you want support for the PMB8876 processor.
+	  Otherwise, say N.
+
 # SA110
 config CPU_SA110
 	bool

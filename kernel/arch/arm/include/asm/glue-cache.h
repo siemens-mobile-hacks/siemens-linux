@@ -49,6 +49,14 @@
 # endif
 #endif
 
+#if defined(CONFIG_CPU_ARM926EJ_S)
+# ifdef _CACHE
+#  define MULTI_CACHE 1
+# else
+#  define _CACHE arm926
+# endif
+#endif
+
 #if defined(CONFIG_CPU_ARM940T)
 # ifdef _CACHE
 #  define MULTI_CACHE 1

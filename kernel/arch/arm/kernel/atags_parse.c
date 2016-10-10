@@ -34,7 +34,7 @@
 static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
 
 #ifndef MEM_SIZE
-#define MEM_SIZE	(16*1024*1024)
+#define MEM_SIZE	(5*1024*1024)
 #endif
 
 static struct {

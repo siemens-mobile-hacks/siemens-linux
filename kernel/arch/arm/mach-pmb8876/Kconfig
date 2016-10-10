@@ -1,0 +1,15 @@
+
+if ARCH_PMB8876
+
+menu "PMB8876 Implementations"
+config MACH_PMB8876
+	bool "Siemens NewSGOLD"
+	help
+	  Say 'Y' here if you want your kernel to support the
+	  Siemens NewSGOLD Devices
+config DEBUG_LL_INCLUDE
+	string
+	default "mach/debug-macro.S"
+endmenu
+
+endif

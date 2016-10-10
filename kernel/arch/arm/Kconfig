@@ -642,6 +642,12 @@ config ARCH_OMAP1
 	help
 	  Support for older TI OMAP1 (omap7xx, omap15xx or omap16xx)
 
+config ARCH_PMB8876
+	bool "Infineon PMB8876"
+	select CPU_ARM926EJ_S
+	help
+	  Support for Infineon PMB8876
+
 endchoice
 
 menu "Multiple platform selection"
@@ -849,6 +855,8 @@ source "arch/arm/mach-w90x900/Kconfig"
 source "arch/arm/mach-zx/Kconfig"
 
 source "arch/arm/mach-zynq/Kconfig"
+
+source "arch/arm/mach-pmb8876/Kconfig"
 
 # ARMv7-M architecture
 config ARCH_EFM32
