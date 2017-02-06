@@ -183,6 +183,8 @@ static unsigned long calibrate_delay_direct(void)
  */
 #define LPS_PREC 8
 
+extern int pmb8876_serve_watchdog(void);
+
 static unsigned long calibrate_delay_converge(void)
 {
 	/* First stage - slowly accelerate to find initial bounds */
@@ -193,8 +195,11 @@ static unsigned long calibrate_delay_converge(void)
 
 	/* wait for "start of" clock tick */
 	ticks = jiffies;
+	pr_info("Wait for clock tick...");
 	while (ticks == jiffies)
 		; /* nothing */
+		
+	pr_info("Done!");
 	/* Go .. */
 	ticks = jiffies;
 	do {
