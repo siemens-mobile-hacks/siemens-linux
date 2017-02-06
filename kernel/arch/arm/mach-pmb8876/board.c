@@ -101,13 +101,13 @@ static void __init pmb8876_map_io(void)
 }
 
 
-static void pmb8876_board_init(void)
+static void __init pmb8876_board_init(void)
 {
     printk("%s(): HELLO BLJAD (.)(.)\n", __func__);
 }
 
 
-static void pmb8876_init_irq(void)
+static void __init pmb8876_init_irq(void)
 {
 
 }

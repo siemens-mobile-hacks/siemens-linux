@@ -360,21 +360,21 @@ __create_page_tables:
 #endif
 
 #ifdef CONFIG_ARCH_PMB8876
-    /* map siemens IO, for boot messages before IO maped */
-    mov     r3, #0xF0000000
+        /* map siemens IO, for boot messages before IO maped */
+        mov     r3, #0xF0000000
 _repl:
-    mov     r0, r3
-	mov     r1, r3
-    lsr     r0, r0, #20
-    lsr     r1, r1, #20
-    lsl     r1, r1, #20
-    lsl     r0, r0, #2
-    orr     r0, r0, r4
-    orr     r2, r1, r7
-    str     r2, [r0]
-    cmp     r3, #0xFFF00000
-    add     r3, #0x00100000
-    bne     _repl
+        mov     r0, r3
+        mov     r1, r3
+        lsr     r0, r0, #20
+        lsr     r1, r1, #20
+        lsl     r1, r1, #20
+        lsl     r0, r0, #2
+        orr     r0, r0, r4
+        orr     r2, r1, r7
+        str     r2, [r0]
+        cmp     r3, #0xFFF00000
+        add     r3, #0x00100000
+        bne     _repl
 #endif
 
 #ifdef CONFIG_ARM_LPAE
