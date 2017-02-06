@@ -538,7 +538,6 @@ static int log_store(int facility, int level,
 	struct printk_log *msg;
 	u32 size, pad_len;
 	u16 trunc_msg_len = 0;
-	u32 i;
 
 	/* number of '\0' padding bytes to next message */
 	size = msg_used_size(text_len, dict_len, &pad_len);
@@ -561,13 +560,6 @@ static int log_store(int facility, int level,
 		memset(log_buf + log_next_idx, 0, sizeof(struct printk_log));
 		log_next_idx = 0;
 	}
-
-	extern void printch(const char);
-	for (i = 0; i < text_len; ++i)
-		printch(text[i]);
-	for (i = 0; i < trunc_msg_len; ++i)
-		printch(trunc_msg[i]);
-	printch('\n');
 
 	/* fill message */
 	msg = (struct printk_log *)(log_buf + log_next_idx);
