@@ -78,8 +78,18 @@
 
 	__HEAD
 ENTRY(stext)
- ARM_BE8(setend	be )			@ ensure we are in BE8 mode
+#ifdef CONFIG_ARCH_PMB8876
+ @ siemens chaos-boot specific
+ ldr r0, =last_watchdog_time
+ str r12, [r0]
+#endif
 
+ @ TODO maybe fix me
+ mov r1, #0
+ mov r2, #0
+
+ ARM_BE8(setend	be )			@ ensure we are in BE8 mode
+ 
  THUMB(	badr	r9, 1f		)	@ Kernel is always entered in ARM.
  THUMB(	bx	r9		)	@ If this is a Thumb-2 kernel,
  THUMB(	.thumb			)	@ switch to Thumb now.
@@ -348,6 +358,25 @@ __create_page_tables:
 	str	r3, [r0]
 #endif
 #endif
+
+#ifdef CONFIG_ARCH_PMB8876
+    /* map siemens IO, for boot messages before IO maped */
+    mov     r3, #0xF0000000
+_repl:
+    mov     r0, r3
+	mov     r1, r3
+    lsr     r0, r0, #20
+    lsr     r1, r1, #20
+    lsl     r1, r1, #20
+    lsl     r0, r0, #2
+    orr     r0, r0, r4
+    orr     r2, r1, r7
+    str     r2, [r0]
+    cmp     r3, #0xFFF00000
+    add     r3, #0x00100000
+    bne     _repl
+#endif
+
 #ifdef CONFIG_ARM_LPAE
 	sub	r4, r4, #0x1000		@ point to the PGD table
 #endif

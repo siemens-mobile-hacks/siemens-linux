@@ -266,8 +266,12 @@ config CPU_ARM1026
 config CPU_ARM926EJ_S
 	bool "Support ARM926EJ-S processor" if ARCH_PMB8876
 	select CPU_32v5
-	select CPU_ABRT_EV5TJ
+	select CPU_ABRT_EV5TJ # But need Jazelle, but EV5TJ ignores bit 10
+	select CPU_CACHE_VIVT
+	select CPU_COPY_V4WB if MMU # can probably do better
+	select CPU_CP15_MMU
 	select CPU_PABRT_LEGACY
+	select CPU_TLB_V4WBI if MMU
 	help
 	  Say Y if you want support for the PMB8876 processor.
 	  Otherwise, say N.
