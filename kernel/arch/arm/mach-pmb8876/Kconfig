@@ -6,6 +6,8 @@ menu "PMB8876 Implementations"
 config MACH_PMB8876
 	bool "Siemens NewSGOLD"
 	select CPU_ARM926EJ_S
+	select MULTI_IRQ_HANDLER
+	select GENERIC_CLOCKEVENTS
 	
 	help
 	  Say 'Y' here if you want your kernel to support the

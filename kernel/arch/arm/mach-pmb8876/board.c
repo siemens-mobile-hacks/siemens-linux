@@ -8,6 +8,8 @@
 #include <asm/setup.h>
 #include <asm/tlbflush.h>
 
+#include <mach/pmb8876_platform.h>
+
 /*
  *
     [SIEMENS:EL71:45]
@@ -41,15 +43,6 @@
 */
 
 
-/* the base address of IO of PMB8876 */
-#define PMB8876_IO_BASE 0xf0000000
-
-/* for present time this value is enough */
-#define PMB8876_IO_SIZE (0xf5000000 - 0xf0000000)
-
-/* the second watchdog in external place. TODO sleep it */
-#define SIEMENS_EL71_EXT_WATCHDOG    0xf4300118
-
 
 
 /* this variable is used in head.S (saving r12 register from chaos-boot) */
@@ -58,7 +51,7 @@ unsigned long last_watchdog_time = 0;
 
 static void pmb8876_switch_watchdog(void)
 {
-    unsigned int r2 = *(unsigned int *)(SIEMENS_EL71_EXT_WATCHDOG);
+    unsigned int r2 = (*(int *)SIEMENS_EL71_EXT_WATCHDOG);
     unsigned int r0 = r2 << 22;
     r0 = r0 >> 31;
     r0 = ~r0;
@@ -67,13 +60,13 @@ static void pmb8876_switch_watchdog(void)
 
     r2 = r2 & ~0x200;
 
-    *(unsigned int *)(SIEMENS_EL71_EXT_WATCHDOG) = r0 | r2;
+    (*(int *)SIEMENS_EL71_EXT_WATCHDOG) = r0 | r2;
 }
 
 
 int pmb8876_serve_watchdog(void)
 {
-    unsigned int now = *(unsigned int *)(0xf4b00020);
+    unsigned int now = (*(int *)0xf4b00020);
 
     if (now - last_watchdog_time < 0x200)
         return 0;
@@ -86,6 +79,9 @@ int pmb8876_serve_watchdog(void)
 
 
 
+/*
+ * We need to map the PMB8876 0xf0 -> 0xff IO space area
+ */
 static struct map_desc pmb8876_io_desc[] __initdata __maybe_unused = {
     {
         .virtual	= PMB8876_IO_BASE,
@@ -103,13 +99,29 @@ static void __init pmb8876_map_io(void)
 
 static void __init pmb8876_board_init(void)
 {
-    printk("%s(): HELLO BLJAD (.)(.)\n", __func__);
+    pr_info("%s(): HELLO BLJAD (.)(.)\n", __func__);
 }
 
 
-static void __init pmb8876_init_irq(void)
+/*
+ * Platform specific handler that read's current IRQ number and call handle_IRQ
+ */
+asmlinkage void pmb8876_handle_irq(struct pt_regs *regs)
 {
+    int irqn = readl((void *)0xF280001C);
+    handle_IRQ(irqn, regs);
+}
 
+
+/*
+ * FIXME
+ */
+static void pmb8876_reboot(enum reboot_mode mode, const char *cmd)
+{
+	pr_info("%s()\n", __func__);
+    
+	pmb8876_switch_watchdog();
+    pmb8876_switch_watchdog();
 }
 
 
@@ -117,5 +129,8 @@ MACHINE_START(PMB8876, "PMB8876")
     .map_io         = pmb8876_map_io,
     .init_machine   = pmb8876_board_init,
     .init_irq		= pmb8876_init_irq,
-    .nr_irqs		= 0
+    .handle_irq     = pmb8876_handle_irq,
+    .init_time      = pmb8876_init_time,
+    .restart        = pmb8876_reboot,
+    .nr_irqs		= 0x78,
 MACHINE_END

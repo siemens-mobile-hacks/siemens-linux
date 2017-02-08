@@ -195,11 +195,9 @@ static unsigned long calibrate_delay_converge(void)
 
 	/* wait for "start of" clock tick */
 	ticks = jiffies;
-	pr_info("Wait for clock tick...");
 	while (ticks == jiffies)
 		; /* nothing */
 		
-	pr_info("Done!");
 	/* Go .. */
 	ticks = jiffies;
 	do {
