@@ -201,15 +201,24 @@ config SERIAL_KS8695_CONSOLE
 	  receives all kernel messages and warnings and which allows
 	  logins in single user mode).
 
+	  
+config SERIAL_PMB8876
+	bool "PMB8876 serial port support"
+	depends on ARCH_PMB8876
+	select SERIAL_CORE
+	help
+	  This selects the PMB8876 UART.  Say Y here.
+
 config SERIAL_PMB8876_CONSOLE
-	bool "Support for console on PMB8876"
+	bool "Support for console on PMB8876 serial port"
+	depends on SERIAL_PMB8876=y
 	select SERIAL_CORE_CONSOLE
 	help
 	  Say Y here if you wish to use a PMB8876 UART as the
 	  system console (the system console is the device which
 	  receives all kernel messages and warnings and which allows
-	  logins in single user mode) as /dev/ttySx.
-	  
+	  logins in single user mode).
+
 config SERIAL_MESON
 	tristate "Meson serial port support"
 	depends on ARCH_MESON

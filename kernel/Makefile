@@ -616,7 +616,7 @@ all: vmlinux
 # values of the respective KBUILD_* variables
 ARCH_CPPFLAGS :=
 ARCH_AFLAGS :=
-ARCH_CFLAGS :=
+#ARCH_CFLAGS := -DDEBUG
 include arch/$(SRCARCH)/Makefile
 
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)

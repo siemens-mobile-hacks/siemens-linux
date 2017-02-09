@@ -45,6 +45,27 @@
 
 
 
+#define EBU_ADDRSEL0 0xF0000080
+#define EBU_ADDRSEL1 0xF0000088
+#define EBU_ADDRSEL2 0xF0000090
+#define EBU_ADDRSEL3 0xF0000098
+#define EBU_ADDRSEL4 0xF00000A0
+#define EBU_ADDRSEL5 0xF00000A8
+#define EBU_ADDRSEL6 0xF00000B0
+#define EBU_BUSCON0 0xF00000C0
+#define EBU_BUSCON1 0xF00000C8
+#define EBU_BUSCON2 0xF00000D0
+#define EBU_BUSCON3 0xF00000D8
+#define EBU_BUSCON4 0xF00000E0
+#define EBU_BUSCON5 0xF00000E8
+#define EBU_BUSCON6 0xF00000F0
+#define EBU_SDRMREF0 0xF0000040
+#define EBU_SDRMOD0 0xF0000060
+#define SCU_WDTCON0 0xF4400024
+#define SCU_WDTCON1 0xF4400028
+#define SCU_ROMAMCR 0xF440007C
+
+
 /* this variable is used in head.S (saving r12 register from chaos-boot) */
 unsigned long last_watchdog_time = 0;
 
@@ -97,9 +118,72 @@ static void __init pmb8876_map_io(void)
 }
 
 
+
+static void init_sdram(void) {
+    
+    writel(0xA8000041, (void *)EBU_ADDRSEL1);
+    writel(0x30720200, (void *)EBU_BUSCON1);
+    writel(6, (void *)EBU_ADDRSEL1);
+    writel(0x891C70, (void *)EBU_SDRMREF0);
+    writel(0x23, (void *)EBU_SDRMOD0);
+    writel(0xA0000011, (void *)EBU_ADDRSEL0);
+    writel(0xA0000011, (void *)EBU_ADDRSEL4);
+    
+	writel(0x00522600, (void *)EBU_BUSCON0);
+    writel(0x00522600, (void *)EBU_BUSCON4);
+}
+
+
+void disable_first_whatchdog(void) {
+    
+    int amcr = readl((void *)SCU_ROMAMCR);
+	writel( amcr &= ~1, (void *)SCU_ROMAMCR );
+	writel(0x8, (void *)SCU_WDTCON1);
+}
+
+
+void set_einit(char flag) {
+	
+	// ldr r3, =0xf4400000
+	// ldr r1, [r3, #0x24] ;SCU_WDTCON0
+	unsigned int wdc0 = readl((void *)SCU_WDTCON0);
+	
+	//  bic r1, r1, #0x0e
+	//  orr r1, r1, #0xf0
+	wdc0 &= ~0x0E;
+	wdc0 |= 0xf0;
+	
+	// ldr r2, [r3, #0x28] ;SCU_WDTCON1
+	// and r2, r2, #0x0c
+	unsigned int wdc1 = readl((void *)SCU_WDTCON1);
+	wdc1 &= 0x0c;
+	
+	// orr r1, r1, r2
+	// str r1, [r3, #0x24] ;SCU_WDTCON0
+	wdc0 |= wdc1; 
+	writel(wdc0, (void *)SCU_WDTCON0);
+	
+	// bic r1, r1, #0x0d
+	// orr r1, r1, #2
+	// orr r0, r0, r1
+	wdc0 &= ~0x0d;
+	wdc0 |= 2;
+	wdc0 |= flag;
+	writel(wdc0, (void *)SCU_WDTCON0);
+}
+
+
 static void __init pmb8876_board_init(void)
 {
     pr_info("%s(): HELLO BLJAD (.)(.)\n", __func__);
+    
+    /**(unsigned int *)0xF6400048 = 0x100;
+    *(unsigned int *)EBU_BUSCON0 & ~0xE000u | 0x2000;*/
+    
+    /*init_sdram();
+    set_einit(0);
+    disable_first_whatchdog();
+    set_einit(1);*/
 }
 
 

@@ -954,6 +954,15 @@ static int __ref kernel_init(void *unused)
 	if (ramdisk_execute_command) {
 		pr_info("Run init process...\n");
 		ret = run_init_process(ramdisk_execute_command);
+		pr_info("Init process finished with exit code: %d\n", ret);
+		
+		/*while(1) {
+			ret = run_init_process("/xuja");
+			
+			pr_info("Process finished with exit code: %d\n", ret);
+			
+		}*/
+		
 		if (!ret)
 			return 0;
 		pr_err("Failed to execute %s (error %d)\n",

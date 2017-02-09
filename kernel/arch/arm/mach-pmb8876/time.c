@@ -79,6 +79,22 @@ void setup_pmb8876_timer(void)
 	/* Mark as being for this cpu only. */
 	evt->cpumask = cpumask_of(smp_processor_id());
 
+	/* init timer */
+	writel(0x100, (void *)0xF6400000);
+	writel(9999, (void *)0xF6400020);
+	writel(0x00000000, (void *)0xF6400024);
+	writel(0x00007530, (void *)0xF6400028);
+	writel(0x00000000, (void *)0xF640002C);
+	writel(0x00000006, (void *)0xF640003C);
+	writel(0x00000000, (void *)0xF6400040);
+	writel(0x80000000, (void *)0xF6400044);
+	writel(0x00000003, (void *)0xF640005C);
+	writel(0x00000001, (void *)0xF6400068);
+	writel(0x00000004, (void *)0xF640006C);
+	writel(0x00000002, (void *)0xF6400070);
+	writel(0x00004000, (void *)0xF64000F8);
+	writel(0x00005000, (void *)0xF64000F8);
+	
 	/* Start out with timer not firing. */
 	writel(PMB8876_GSM_TPU_MASK, PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER) );
 
