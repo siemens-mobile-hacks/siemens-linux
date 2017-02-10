@@ -1,20 +1,10 @@
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/interrupt.h>
-#include <linux/syscore_ops.h>
 #include <linux/err.h>
-#include <linux/clk.h>
 #include <linux/io.h>
-#include <linux/device.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
 #include <linux/gpio.h>
 #include <linux/bitops.h>
 #include <mach/pmb8876-gpio.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/spi_gpio.h>
-#include <linux/spi/mmc_spi.h>
-#include <linux/mmc/host.h>
 
 struct pmb8876_pcl {
 	uint8_t num;
