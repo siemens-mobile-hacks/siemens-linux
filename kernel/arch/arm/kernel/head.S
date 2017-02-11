@@ -78,13 +78,15 @@
 
 	__HEAD
 ENTRY(stext)
+
 #ifdef CONFIG_ARCH_PMB8876
  @ siemens chaos-boot specific
- ldr r0, =last_watchdog_time
- str r12, [r0]
+ @ldr r0, =last_watchdog_time // FIXME
+ @str r12, [r0]
 #endif
 
- @ TODO maybe fix me
+ @ TODO maybe fix me!!!!!
+ mov r0, #0
  mov r1, #0
  mov r2, #0
 

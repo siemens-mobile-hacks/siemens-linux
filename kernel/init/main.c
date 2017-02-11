@@ -951,8 +951,9 @@ static int __ref kernel_init(void *unused)
 
 	rcu_end_inkernel_boot();
 
+	//ramdisk_execute_command = "/linuxrc";
 	if (ramdisk_execute_command) {
-		pr_info("Run init process...\n");
+		pr_info("Run init(%s) process...\n", ramdisk_execute_command);
 		ret = run_init_process(ramdisk_execute_command);
 		pr_info("Init process finished with exit code: %d\n", ret);
 		

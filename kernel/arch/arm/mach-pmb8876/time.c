@@ -111,7 +111,6 @@ void setup_pmb8876_timer(void)
  */
 static irqreturn_t pmb8876_timer_interrupt(int irq, void *dev_id)
 {
-	extern unsigned long last_watchdog_time;
 	struct clock_event_device *evt = (&clockevent_pmb8876);
 	unsigned int ticks;
 	
@@ -142,8 +141,8 @@ static struct irqaction pmb8876_timer_irq = {
 static struct timer_list pmb8876_watchdog_timer;
 void pmb8876_timer_callback( unsigned long data )
 {
-	int st = 1;
-
+	((void)data);
+	
 	{
 		unsigned int r2 = readl((void *)SIEMENS_EL71_EXT_WATCHDOG);
 		unsigned int r0 = r2 << 22;
@@ -177,6 +176,6 @@ void __init pmb8876_init_time(void)
 	 *  Watchdog keep-alive timer
 	 */
 	setup_timer(&pmb8876_watchdog_timer, pmb8876_timer_callback, 0);
-	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(50));
+	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(1000));
 }
 

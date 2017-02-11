@@ -1640,7 +1640,7 @@ static int do_execveat_common(int fd, struct filename *filename,
 	struct file *file;
 	struct files_struct *displaced;
 	int retval;
-
+	
 	if (IS_ERR(filename))
 		return PTR_ERR(filename);
 

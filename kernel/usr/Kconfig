@@ -21,6 +21,11 @@ config INITRAMFS_SOURCE
 
 	  If you are not sure, leave it blank.
 
+config INITRAMFS_EXTERNAL_SOURCE
+        string "Override initramfs source file with *.cpio.gz image"
+        default ""
+        help
+
 config INITRAMFS_ROOT_UID
 	int "User ID to map to 0 (user root)"
 	depends on INITRAMFS_SOURCE!=""
