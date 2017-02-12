@@ -141,7 +141,7 @@
 #define GPIO_UNK_40						40
 #define GPIO_UNK_41						41
 #define GPIO_UNK_42						42
-#define GPIO_TOUT0_LED_FL_OFF			43
+#define GPIO_LED_FL_OFF					43
 #define GPIO_TOUT1_PM_CHARGE_UC			44
 #define GPIO_UNK_45						45
 #define GPIO_UNK_46						46
@@ -161,7 +161,7 @@
 #define GPIO_UNK_60						60
 #define GPIO_UNK_61						61
 #define GPIO_DSPOUT1_PM_WADOG			62
-#define GPIO_DSPIN1_LED_FL_EN			63
+#define GPIO_LED_FL_EN					63
 #define GPIO_UNK_64						64
 #define GPIO_UNK_65						65
 #define GPIO_UNK_66						66

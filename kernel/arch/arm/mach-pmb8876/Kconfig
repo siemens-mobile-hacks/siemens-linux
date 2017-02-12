@@ -22,6 +22,11 @@ config DEBUG_LL_PMB8876
 	help
 	  Adds low level uart macro`s that uses UART directly for low-level debug
 
+config DEBUG_PMB8876_TEST_DIALOG_I2C_DEVICES
+	bool "Test Dialog/Twigo I2C devices"
+	help
+	 For i2c debug
+
 endmenu
 
 endif
