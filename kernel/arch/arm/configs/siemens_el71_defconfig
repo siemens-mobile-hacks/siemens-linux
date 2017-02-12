@@ -625,6 +625,7 @@ CONFIG_MTD_PHYSMAP_START=0xA0000000
 CONFIG_MTD_PHYSMAP_LEN=0x04000000
 CONFIG_MTD_PHYSMAP_BANKWIDTH=2
 # CONFIG_MTD_PHYSMAP_OF is not set
+# CONFIG_MTD_GPIO_ADDR is not set
 # CONFIG_MTD_PLATRAM is not set
 CONFIG_MTD_LATCH_ADDR=y
 
@@ -674,6 +675,7 @@ CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
 # CONFIG_BLK_DEV_RAM is not set
 # CONFIG_CDROM_PKTCDVD is not set
 # CONFIG_ATA_OVER_ETH is not set
+# CONFIG_MG_DISK is not set
 # CONFIG_BLK_DEV_RBD is not set
 
 #
@@ -692,6 +694,7 @@ CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
 #
 # Texas Instruments shared transport line discipline
 #
+# CONFIG_TI_ST is not set
 
 #
 # Altera FPGA firmware download module
@@ -828,7 +831,29 @@ CONFIG_TTY_PRINTK=y
 # Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
 #
 CONFIG_ARCH_HAVE_CUSTOM_GPIO_H=y
-# CONFIG_GPIOLIB is not set
+CONFIG_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_OF_GPIO=y
+CONFIG_DEBUG_GPIO=y
+CONFIG_GPIO_SYSFS=y
+
+#
+# Memory mapped GPIO drivers
+#
+# CONFIG_GPIO_74XX_MMIO is not set
+# CONFIG_GPIO_ALTERA is not set
+# CONFIG_GPIO_DWAPB is not set
+# CONFIG_GPIO_EM is not set
+# CONFIG_GPIO_GENERIC_PLATFORM is not set
+# CONFIG_GPIO_GRGPIO is not set
+# CONFIG_GPIO_MPC8XXX is not set
+# CONFIG_GPIO_XILINX is not set
+# CONFIG_GPIO_ZEVIO is not set
+# CONFIG_GPIO_ZX is not set
+
+#
+# MFD GPIO expanders
+#
 # CONFIG_W1 is not set
 # CONFIG_POWER_SUPPLY is not set
 # CONFIG_POWER_RESET is not set
@@ -856,7 +881,9 @@ CONFIG_BCMA_POSSIBLE=y
 # CONFIG_MFD_ATMEL_FLEXCOM is not set
 # CONFIG_MFD_ATMEL_HLCDC is not set
 # CONFIG_MFD_CROS_EC is not set
+# CONFIG_MFD_ASIC3 is not set
 # CONFIG_MFD_HI6421_PMIC is not set
+# CONFIG_HTC_EGPIO is not set
 # CONFIG_HTC_PASIC3 is not set
 # CONFIG_MFD_KEMPLD is not set
 # CONFIG_MFD_MT6397 is not set

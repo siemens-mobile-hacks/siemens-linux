@@ -12,11 +12,13 @@ struct pmb8876_pcl {
 };
 
 static struct pmb8876_pcl pcl_pins[] = {
-	{	GPIO_MMC_VCC_EN,		PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
+/*
+	{	GPIO_MMC_VCC_EN,		PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	HIGH,	PUSHPULL,	NONE,		NO_ENAQ)	},
 	{	GPIO_MMC_CMD,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
-	{	GPIO_MMC_DAT,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	IN,		LOW,	PUSHPULL,	PULLDOWN,	NO_ENAQ)	},
+	{	GPIO_MMC_DAT,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	IN,		LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
 	{	GPIO_MMC_CLK,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
-	{	GPIO_MMC_CD,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
+	{	GPIO_USART0_RTS,		PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
+*/
 };
 
 /*
@@ -56,48 +58,31 @@ static int pmb8876_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 
 static int pmb8876_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 {
-	uint32_t val;
-	
-	val = readl((void *) PMB8876_GPIO_PIN(offset));
+	uint32_t val = readl((void *) PMB8876_GPIO_PIN(offset));
 	pmb8876_gpio_reg_set_dir(val, PMB8876_GPIO_DIR_IN);
 	writel(val, (void *) PMB8876_GPIO_PIN(offset));
-	
-	// pr_info("pmb8876_gpio_direction_input(%d) addr=%08X, val=%08X\n", offset, PMB8876_GPIO_PIN(offset), val);
 	return 0;
 }
 
 static int pmb8876_gpio_direction_output(struct gpio_chip *chip, unsigned offset, int value)
 {
-	uint32_t val;
-	
-	val = readl((void *) PMB8876_GPIO_PIN(offset));
+	uint32_t val = readl((void *) PMB8876_GPIO_PIN(offset));
 	pmb8876_gpio_reg_set_dir(val, PMB8876_GPIO_DIR_OUT);
 	pmb8876_gpio_reg_set_data(val, value ? 1 : 0);
 	writel(val, (void *) PMB8876_GPIO_PIN(offset));
-	
-	// pr_info("pmb8876_gpio_direction_output(%d, %d) addr=%08X, val=%08X\n", offset, value, PMB8876_GPIO_PIN(offset), val);
 	return 0;
 }
 
 static int pmb8876_gpio_get(struct gpio_chip *chip, unsigned offset)
 {
-	uint32_t v = pmb8876_gpio_reg_get_data(readl((void *) PMB8876_GPIO_PIN(offset)));
-//	pr_info("pmb8876_gpio_get(%d) = %d\n", offset, v);
-	return v;
+	return pmb8876_gpio_reg_get_data(readl((void *) PMB8876_GPIO_PIN(offset)));
 }
 
 static void pmb8876_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 {
-	uint32_t val;
-	
-	if (offset == GPIO_MMC_CD)
-		value = !value;
-	
-	val = readl((void *) PMB8876_GPIO_PIN(offset));
+	uint32_t val = readl((void *) PMB8876_GPIO_PIN(offset));
 	pmb8876_gpio_reg_set_data(val, value ? 1 : 0);
 	writel(val, (void *) PMB8876_GPIO_PIN(offset));
-	
-	// pr_info("pmb8876_gpio_set(%d, %d) addr=%08X, val=%08X\n", offset, value, PMB8876_GPIO_PIN(offset), val);
 }
 
 static struct gpio_chip ext_chip = {
