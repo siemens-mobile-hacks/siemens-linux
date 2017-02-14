@@ -1,2 +1,16 @@
 
-Flash into 0xA2880000(User FFS with skiped first block) 
+Partition Map:
+
+A0000000 - A0040000 : 256k   : BOOTCORE
+A0040000 - A0080000 : 256k   : EELITE
+A0080000 - A2000000 : 32256k : FIRMWARE
+A2000000 - A2040000 : 256k   : EMPTY1
+A2040000 - A2840000 : 8m     : FFS_C
+A2840000 - A3A00000 : 18176k : FFS_A
+A3A00000 - A3F00000 : 5120k  : FFS_B
+
+
+!! rootfs.ext2 flash into FFS_A !!
+
+User: root
+Password: 123

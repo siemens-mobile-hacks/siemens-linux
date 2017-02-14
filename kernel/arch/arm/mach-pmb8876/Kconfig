@@ -24,6 +24,8 @@ config DEBUG_LL_PMB8876
 
 config DEBUG_PMB8876_TEST_DIALOG_I2C_DEVICES
 	bool "Test Dialog/Twigo I2C devices"
+	select GPIOLIB
+	select I2C
 	help
 	 For i2c debug
 

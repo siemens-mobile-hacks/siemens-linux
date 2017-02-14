@@ -9,7 +9,6 @@
 #define PMB8876_IRQ_ADDR(n) 		((void *)PMB8876_IRQ_BASE + ((n) * 4))
 
 #define PMB8876_GSM_TPU_MASK		0x0
-#define PMB8876_GSM_TPU_UNMASK		0x1
 
 #define PMB8876_GSM_TIMER			0x77
 

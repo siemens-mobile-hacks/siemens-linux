@@ -19,19 +19,20 @@
 #include <asm/irq.h>
 #include <mach/hardware.h>
 #include <mach/pmb8876_platform.h>
+#include <mach/irqs.h>
 #include <asm/mach-types.h>
 
 
 static unsigned int lastticks = 0;
 
-
-#define PMB8876_GSM_CLOCK_FREQ 9999
+#define PMB8876_GSM_CLOCK_IRQ	0x77
+#define PMB8876_GSM_CLOCK_FREQ	9999
 
 
 static int pmb8876_timer_set_next_event(unsigned long ticks,
 				     struct clock_event_device *evt)
 {
-	writel(PMB8876_GSM_TPU_UNMASK, PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER) );
+	writel(pmb8876_irq_priority(PMB8876_GSM_CLOCK_IRQ), PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER) );
 	return 0;
 }
 
@@ -137,12 +138,13 @@ static struct irqaction pmb8876_timer_irq = {
 
 
 
-
+static int xuj = 0;
 static struct timer_list pmb8876_watchdog_timer;
 void pmb8876_timer_callback( unsigned long data )
 {
 	((void)data);
 	
+	//if(xuj < 50)
 	{
 		unsigned int r2 = readl((void *)SIEMENS_EL71_EXT_WATCHDOG);
 		unsigned int r0 = r2 << 22;
@@ -154,6 +156,8 @@ void pmb8876_timer_callback( unsigned long data )
 		r2 = r2 & ~0x200;
 
 		writel(r0 | r2, (void *)SIEMENS_EL71_EXT_WATCHDOG);
+		
+		xuj++;
 	}
 	//pr_info("Serve Watchdog...\n");
 	
@@ -169,7 +173,7 @@ void __init pmb8876_init_time(void)
 	setup_pmb8876_timer();
 	
 	lastticks = readl((void *)0xf4b00020);
-	setup_irq(0x77, &pmb8876_timer_irq);
+	setup_irq(PMB8876_GSM_CLOCK_IRQ, &pmb8876_timer_irq);
 	
 	
 	/* 

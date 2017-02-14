@@ -117,6 +117,11 @@ static void __init pmb8876_board_init(void)
 asmlinkage void pmb8876_handle_irq(struct pt_regs *regs)
 {
     int irqn = readl((void *)0xF280001C);
+    
+    /*if( irqn != 0x77 ) {
+        pr_info("irq %d fired!\n", irqn);
+    }*/
+    
     handle_IRQ(irqn, regs);
 }
 
