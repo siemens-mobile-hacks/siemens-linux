@@ -6,35 +6,47 @@
 #include <linux/bitops.h>
 #include <mach/pmb8876-gpio.h>
 
+#define PCL_DEF_CONFIG		PMB8876_GPIO(NO_ALT,	NO_ALT,		MANUAL,		IN,		LOW,	PUSHPULL,	NONE,		NO_ENAQ)
+
 struct pmb8876_pcl {
 	uint8_t num;
 	uint32_t flags;
 };
 
+// Стандартная конфигурация пинов GPIO
 static struct pmb8876_pcl pcl_pins[] = {
 	{	GPIO_MMC_VCC_EN,		PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
-	
-	// camera flashlight
-	{	GPIO_LED_FL_EN,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
-	{	GPIO_LED_FL_OFF,		PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	PUSHPULL,	NONE,		NO_ENAQ)	},
 	
 	// software i2c
 	{	GPIO_I2C_SCL,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ)	},
 	{	GPIO_I2C_SDA,			PMB8876_GPIO(NO_ALT,	NO_ALT,	MANUAL,	OUT,	LOW,	OPENDRAIN,	PULLUP,		NO_ENAQ)	},
 };
 
-/*
-static int pmb8876_gpi_request(struct gpio_chip *chip, unsigned offset)
+static int pmb8876_gpio_request(struct gpio_chip *chip, unsigned offset)
 {
-	pr_info("pmb8876_gpi_request(%d) addr=%08X\n", offset, PMB8876_GPIO_PIN(offset));
+	uint32_t i, flags;
+	
+	flags = PCL_DEF_CONFIG;
+	for (i = 0; i < sizeof(pcl_pins) / sizeof(pcl_pins[0]); ++i) {
+		struct pmb8876_pcl *pcl = &pcl_pins[i];
+		if (pcl->num == offset) {
+			flags = pcl->flags;
+			break;
+		}
+	}
+	
+	// Устанавливаем сначала ENAQ, что бы при переключении IS/OS мусор не попал в пины
+	if ((pmb8876_gpio_reg_get_is(flags) || pmb8876_gpio_reg_get_os(flags)) && !pmb8876_gpio_reg_get_enaq(flags))
+		writel(flags | (1 << PMB8876_GPIO_ENAQ), (void *) PMB8876_GPIO_PIN(offset));
+	
+	writel(flags, (void *) PMB8876_GPIO_PIN(offset));
+	
 	return 0;
 }
 
 static int pmb8876_gpio_set_single_ended(struct gpio_chip *chop, unsigned int offset, enum single_ended_mode mode)
 {
 	uint32_t val;
-	
-	pr_info("pmb8876_gpio_set_single_ended(%d)\n", offset);
 	switch (mode) {
 		case LINE_MODE_OPEN_DRAIN:
 			val = readl((void *) PMB8876_GPIO_PIN(offset));
@@ -51,7 +63,6 @@ static int pmb8876_gpio_set_single_ended(struct gpio_chip *chop, unsigned int of
 			return -ENOTSUPP;
 	}
 }
-*/
 
 static int pmb8876_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 {
@@ -89,13 +100,13 @@ static void pmb8876_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 
 static struct gpio_chip ext_chip = {
 	.label				= "gpio",
-//	.request			= pmb8876_gpi_request,
+	.request			= pmb8876_gpio_request,
 	.get_direction		= pmb8876_gpio_get_direction,
 	.direction_input	= pmb8876_gpio_direction_input,
 	.direction_output	= pmb8876_gpio_direction_output,
 	.get				= pmb8876_gpio_get,
 	.set				= pmb8876_gpio_set,
-//	.set_single_ended	= pmb8876_gpio_set_single_ended,
+	.set_single_ended	= pmb8876_gpio_set_single_ended,
 	.can_sleep			= false,
 	.ngpio				= 0x71, // FIXME: Устал искать, куда засунуть ARCH_NR_GPIOS
 	.base				= 0
@@ -103,23 +114,7 @@ static struct gpio_chip ext_chip = {
 
 static int __init pmb8876_init_gpio(void)
 {
-	int ret;
-	uint32_t i;
-	
-	for (i = 0; i < sizeof(pcl_pins) / sizeof(pcl_pins[0]); ++i) {
-		struct pmb8876_pcl *pcl = &pcl_pins[i];
-		if ((pmb8876_gpio_reg_get_is(pcl->flags) || pmb8876_gpio_reg_get_os(pcl->flags)) && !pmb8876_gpio_reg_get_enaq(pcl->flags)) {
-			// Устанавливаем ENAQ, что бы при переключении IS/OS мусор не попал в пины
-			writel(pcl->flags | (1 << PMB8876_GPIO_ENAQ), (void *) PMB8876_GPIO_PIN(pcl->num));
-			
-			// Убираем ENAQ после установки OS/IS
-			writel(pcl->flags, (void *) PMB8876_GPIO_PIN(pcl->num));
-		} else {
-			writel(pcl->flags, (void *) PMB8876_GPIO_PIN(pcl->num));
-		}
-	}
-	
-	ret = gpiochip_add_data(&ext_chip, NULL);
+	int ret = gpiochip_add_data(&ext_chip, NULL);
 	if (ret) {
 		pr_info("pmb8876_init_gpio fail = %d\n", ret);
 		return ret;

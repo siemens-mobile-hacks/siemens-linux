@@ -94,7 +94,7 @@
 #define pmb8876_gpio_reg_get_dir(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_DIR,  PMB8876_GPIO_DIR_MASK)
 #define pmb8876_gpio_reg_get_data(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_DATA, PMB8876_GPIO_DATA_MASK)
 #define pmb8876_gpio_reg_get_ppen(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_PPEN, PMB8876_GPIO_PPEN_MASK)
-#define pmb8876_gpio_reg_get_PDPU(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_PDPU, PMB8876_GPIO_PDPU_MASK)
+#define pmb8876_gpio_reg_get_pdpu(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_PDPU, PMB8876_GPIO_PDPU_MASK)
 #define pmb8876_gpio_reg_get_enaq(reg)				pmb8876_gpio_reg_get_bit(reg, PMB8876_GPIO_ENAQ, PMB8876_GPIO_ENAQ_MASK)
 
 // pins
