@@ -45,14 +45,9 @@
 */
 
 
-
-/* this variable is used in head.S (saving r12 register from chaos-boot) */
-unsigned long last_watchdog_time = 0;
-
-
 static void pmb8876_switch_watchdog(void)
 {
-    unsigned int r2 = (*(int *)SIEMENS_EL71_EXT_WATCHDOG);
+    unsigned int r2 = (*(int *)PMB8876_EXT_WATCHDOG);
     unsigned int r0 = r2 << 22;
     r0 = r0 >> 31;
     r0 = ~r0;
@@ -61,21 +56,7 @@ static void pmb8876_switch_watchdog(void)
 
     r2 = r2 & ~0x200;
 
-    (*(int *)SIEMENS_EL71_EXT_WATCHDOG) = r0 | r2;
-}
-
-
-int pmb8876_serve_watchdog(void)
-{
-    unsigned int now = (*(int *)0xf4b00020);
-
-    if (now - last_watchdog_time < 0x200)
-        return 0;
-
-    pmb8876_switch_watchdog();
-
-    last_watchdog_time = now;
-    return 1;
+    (*(int *)PMB8876_EXT_WATCHDOG) = r0 | r2;
 }
 
 

@@ -45,7 +45,7 @@ pmb8876_set_irq_priority(int irq, unsigned char priority)
 static void
 pmb8876_irq_disable(struct irq_data *d)
 {
-	writel(PMB8876_GSM_TPU_MASK, PMB8876_IRQ_ADDR(d->irq) );
+	writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(d->irq) );
 }
 
 
@@ -59,7 +59,7 @@ pmb8876_irq_ack(struct irq_data *d)
 static void
 pmb8876_irq_mask(struct irq_data *d)
 {
-	writel(PMB8876_GSM_TPU_MASK, PMB8876_IRQ_ADDR(d->irq) );
+	writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(d->irq) );
 }
 
 
@@ -90,7 +90,7 @@ void __init pmb8876_init_irq(void)
 		clr = IRQ_NOREQUEST;
 		
 		/* mask irq */
-		writel(PMB8876_GSM_TPU_MASK, PMB8876_IRQ_ADDR(i));
+		writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(i));
 		
 		irq_set_chip_and_handler(i, &ext_chip, handle_level_irq);
 		irq_modify_status(i, clr, 0);

@@ -1512,6 +1512,9 @@ choice
 	depends on HZ_FIXED = 0
 	prompt "Timer frequency"
 
+config HZ_50
+	bool "50 Hz"
+	
 config HZ_100
 	bool "100 Hz"
 
@@ -1535,6 +1538,7 @@ endchoice
 config HZ
 	int
 	default HZ_FIXED if HZ_FIXED != 0
+	default 50 if HZ_50
 	default 100 if HZ_100
 	default 200 if HZ_200
 	default 250 if HZ_250

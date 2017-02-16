@@ -57,10 +57,6 @@
 #define PMB8876_UART_PORT_SIZE			0x80
 #define PMB8876_UART_FIFO_SIZE			8
 
-/* IRQ */
-#define PMB8876_IRQ_UART_TX				4
-#define PMB8876_IRQ_UART_RX				6
-#define PMB8876_IRQ_UART_LINE_STATUS	7
 
 /* REGS */
 #define PMB8876_USART0_BASE				0xf1000000
@@ -298,7 +294,7 @@ static void pmb8876uart_stop_tx(struct uart_port *port)
 		 * imposed deadlock by not waiting for irq handler to end,
 		 * since this pmb8876uart_stop_tx() is called from interrupt context.
 		 */
-		disable_irq_nosync(PMB8876_IRQ_UART_TX);
+		disable_irq_nosync(PMB8876_UART_TX_IRQ);
 		tx_enable(port, 0);
 	}
 }
@@ -306,7 +302,7 @@ static void pmb8876uart_stop_tx(struct uart_port *port)
 static void pmb8876uart_start_tx(struct uart_port *port)
 {
 	if (!tx_enabled(port)) {
-		enable_irq(PMB8876_IRQ_UART_TX);
+		enable_irq(PMB8876_UART_TX_IRQ);
 		tx_enable(port, 1);
 	}
 }
@@ -314,7 +310,7 @@ static void pmb8876uart_start_tx(struct uart_port *port)
 static void pmb8876uart_stop_rx(struct uart_port *port)
 {
 	if (rx_enabled(port)) {
-		disable_irq(PMB8876_IRQ_UART_RX);
+		disable_irq(PMB8876_UART_RX_IRQ);
 		rx_enable(port, 0);
 	}
 }
@@ -372,7 +368,6 @@ static irqreturn_t pmb8876uart_rx_chars(int irq, void *dev_id)
 {
 	struct uart_port *port = dev_id;
 	unsigned int status, ch, lsr = 0, flg, tmp;
-	unsigned long irqflg;
 
 	spin_lock(&port->lock);
 	
@@ -387,6 +382,19 @@ static irqreturn_t pmb8876uart_rx_chars(int irq, void *dev_id)
 		// Get char
 		ch = UART_GET_CHAR(port) & 0xff;
 		port->icount.rx++;
+		
+		lsr = UART_CON(port);
+		if( lsr & CON_OE ) {
+			tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
+			__raw_writel(tmp | WHBCON_CLROE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+			port->icount.overrun++;
+		}
+		
+		if( lsr & CON_FE ) {
+			tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
+			__raw_writel(tmp | WHBCON_CLRFE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+			port->icount.frame++;
+		}
 
 		if (uart_handle_sysrq_char(port, ch))
 			goto ignore_char;
@@ -413,7 +421,6 @@ static irqreturn_t pmb8876uart_tx_chars(int irq, void *dev_id)
 {
 	struct uart_port *port = dev_id;
 	struct circ_buf *xmit = &port->state->xmit;
-	unsigned long irqflg;
 
 	spin_lock(&port->lock);
 	
@@ -509,12 +516,12 @@ static int pmb8876uart_startup(struct uart_port *port)
 	unsigned int conr = 0;
 
 	/* setup irq hardware priority */
-	pmb8876_set_irq_priority(PMB8876_IRQ_UART_LINE_STATUS, 0xa);
-	pmb8876_set_irq_priority(PMB8876_IRQ_UART_TX, 0xa);
-	pmb8876_set_irq_priority(PMB8876_IRQ_UART_RX, 0xa);
+	pmb8876_set_irq_priority(PMB8876_UART_LS_IRQ, 0xa);
+	pmb8876_set_irq_priority(PMB8876_UART_TX_IRQ, 0xa);
+	pmb8876_set_irq_priority(PMB8876_UART_RX_IRQ, 0x1);
 	
 	/* change type of tx irq */
-	irq_modify_status(PMB8876_IRQ_UART_TX, IRQ_NOREQUEST, IRQ_NOAUTOEN);
+	irq_modify_status(PMB8876_UART_TX_IRQ, IRQ_NOREQUEST, IRQ_NOAUTOEN);
 	
 	/* reset */
 	tx_enable(port, 0);
@@ -540,19 +547,19 @@ static int pmb8876uart_startup(struct uart_port *port)
 	/*
 	 * Allocate the IRQ
 	 */
-	retval = request_irq(PMB8876_IRQ_UART_TX, pmb8876uart_tx_chars, 0, "UART TX", port);
+	retval = request_irq(PMB8876_UART_TX_IRQ, pmb8876uart_tx_chars, 0, "UART TX", port);
 	if (retval) {
 		pr_err("Failed to request TX irq: %d\n", retval);
 		goto err_tx;
 	}
 	
-	retval = request_irq(PMB8876_IRQ_UART_RX, pmb8876uart_rx_chars, 0, "UART RX", port);
+	retval = request_irq(PMB8876_UART_RX_IRQ, pmb8876uart_rx_chars, 0, "UART RX", port);
 	if (retval) {
 		pr_err("Failed to request RX irq: %d\n", retval);
 		goto err_rx;
 	}
 	
-	retval = request_irq(PMB8876_IRQ_UART_LINE_STATUS, pmb8876uart_linest_handler, 0, "UART LineStatus", port);
+	retval = request_irq(PMB8876_UART_LS_IRQ, pmb8876uart_linest_handler, 0, "UART LineStatus", port);
 	if (retval)
 		goto err_ls;
 
@@ -563,11 +570,11 @@ static int pmb8876uart_startup(struct uart_port *port)
 	return 0;
 
 //err_ms:
-	//free_irq(PMB8876_IRQ_UART_LINE_STATUS, port);
+	//free_irq(PMB8876_UART_LS_IRQ, port);
 err_ls:
-	free_irq(PMB8876_IRQ_UART_RX, port);
+	free_irq(PMB8876_UART_RX_IRQ, port);
 err_rx:
-	free_irq(PMB8876_IRQ_UART_TX, port);
+	free_irq(PMB8876_UART_TX_IRQ, port);
 err_tx:
 	return retval;
 }
@@ -579,9 +586,9 @@ static void pmb8876uart_shutdown(struct uart_port *port)
 	/* mask rx/tx interrupt */
 	__raw_writel( 0, (void *)PMB8876_USART0_IMSC(port->mapbase) );
 	
-	free_irq(PMB8876_IRQ_UART_RX, port);
-	free_irq(PMB8876_IRQ_UART_TX, port);
-	free_irq(PMB8876_IRQ_UART_LINE_STATUS, port);
+	free_irq(PMB8876_UART_RX_IRQ, port);
+	free_irq(PMB8876_UART_TX_IRQ, port);
+	free_irq(PMB8876_UART_LS_IRQ, port);
 	//free_irq(PMB8876_IRQ_UART_MODEM_STATUS, port);
 	
 	if( usrptr ) kfree(usrptr);
@@ -606,11 +613,11 @@ static void pmb8876uart_set_termios(struct uart_port *port, struct ktermios *ter
 	if( new ) {
 		int bgfd = pmb8876_baud_to_divisor(baud);
 		if( bgfd < 0 ) {
-			pr_err("Unsupported baudrate %d\n", baud);
+			//pr_err("Unsupported baudrate %d\n", baud);
 			return;
 		}
 			
-		//pr_info("ttyAM0: Setting baudrate %d\n", baud);
+		pr_info("ttyAM0: Setting baudrate %d\n", baud);
 		//__raw_writel( ((bgfd >> 16)), (void *)PMB8876_USART0_BG(port->mapbase) );
 		//__raw_writel( ((bgfd << 16) >> 16), (void *)PMB8876_USART0_FDV(port->mapbase) );
 	}
@@ -700,7 +707,7 @@ static struct uart_port pmb8876uart_ports[] = {
 		.membase	= (void *)PMB8876_USART0_BASE,
 		.mapbase	= PMB8876_USART0_BASE,
 		.iotype		= SERIAL_IO_MEM,
-		.irq		= PMB8876_IRQ_UART_TX,
+		.irq		= PMB8876_UART_TX_IRQ,
 		.uartclk	= PMB8876_CLOCK_RATE * 16,
 		.fifosize	= PMB8876_UART_FIFO_SIZE,
 		.ops		= &pmb8876uart_pops,
@@ -712,7 +719,7 @@ static struct uart_port pmb8876uart_ports[] = {
 		.membase	= (void *)PMB8876_USART1_BASE,
 		.mapbase	= PMB8876_USART1_BASE,
 		.iotype		= SERIAL_IO_MEM,
-		.irq		= PMB8876_IRQ_UART_TX,
+		.irq		= PMB8876_UART_TX_IRQ,
 		.uartclk	= PMB8876_CLOCK_RATE * 16,
 		.fifosize	= PMB8876_UART_FIFO_SIZE,
 		.ops		= &pmb8876uart_pops,
@@ -764,7 +771,7 @@ static int __init pmb8876_console_setup(struct console *co, char *options)
 	int baud = 1600000;
 	int bits = 8;
 	int parity = 'n';
-	int flow = 'n';
+	int flow = 'x';
 
 	/*
 	 * Check whether an invalid uart number has been specified, and
