@@ -792,6 +792,7 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
 	timeout = data->timeout_clks + (unsigned int)clks;
 
 	base = host->base;
+	timeout = 0x03938700; // FIXME: pmb8876 hack
 	writel(timeout, base + MMCIDATATIMER);
 	writel(host->size, base + MMCIDATALENGTH);
 
