@@ -6,9 +6,9 @@
 
 .macro	addruart, rp, rv, tmp
 #ifdef CONFIG_DEBUG_LL_PMB8876
-    /* the physical and virtual address of IO is same */
-    mov \rp, #0xf1000000
-    mov \rv, #0xf1000000
+	/* the physical and virtual address of IO is same */
+	mov \rp, #0xf1000000
+	mov \rv, #0xf1000000
 #endif
 .endm
 
@@ -22,7 +22,7 @@
 .macro  busyuart,rd,rx
 #ifdef CONFIG_DEBUG_LL_PMB8876
 1002:
-    ldr \rd, [\rx, #0x68]
+	ldr \rd, [\rx, #0x68]
 	ands \rd, \rd, #0x02
 	beq 1002b
 		

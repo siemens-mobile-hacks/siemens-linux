@@ -19,7 +19,6 @@
 #include <asm/irq.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
-#include <mach/irqs.h>
 #include <asm/mach-types.h>
 
 
@@ -31,7 +30,6 @@
 #define PMB8876_GSM_TPU_CON_ENABLE	0x1000
 
 
-#define PMB8876_GSM_CLOCK_IRQ		0x77
 #define PMB8876_GSM_CLOCK_FREQ		2166000
 
 
@@ -161,6 +159,6 @@ void __init pmb8876_init_time(void)
 	pr_info("Initialize pmb8876 clockevent timer...\n");
 	
 	setup_pmb8876_timer();
-	setup_irq(PMB8876_GSM_CLOCK_IRQ, &pmb8876_timer_irq);
+	setup_irq(PMB8876_GSM_TIMER_IRQ, &pmb8876_timer_irq);
 }
 

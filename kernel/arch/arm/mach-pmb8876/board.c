@@ -41,8 +41,117 @@
     UseRAM = 0x89000;
     MallocAddress = 0xA0092F51;
     MallocPages = 300;
-
 */
+
+#define PLL_OSC 0xF45000A0
+#define PLL_CON0 0xF45000A4
+#define PLL_CON1 0xF45000A8
+#define PLL_CON2 0xF45000AC
+#define PLL_STAT 0xF45000B0
+#define PLL_ICR 0xF45000CC
+
+#define SCU_BASE 0xF4400000
+#define SCU_RST_CTRL_ST 0xF4400018
+#define SCU_WDTCON0 0xF4400024
+#define SCU_WDTCON1 0xF4400028
+#define SCU_PLLCLC 0xF4400044
+#define SCU_CHIPID 0xF4400060
+#define SCU_RTCIF 0xF4400064
+#define SCU_CHIPID 0xF4400060
+#define SCU_ROMAMCR 0xF440007C
+
+#define EBU_CLC 0xF0000000
+#define EBU_ID 0xF0000008
+#define EBU_CON 0xF0000010
+#define EBU_BFCON 0xF0000020
+
+
+
+#define IOPLL_CON0()		readl((void *)PLL_CON0)
+#define IOPLL_CON0_SET(x)	writel(x, (void *)PLL_CON0)
+
+#define IOPLL_CON1()		readl((void *)PLL_CON1)
+#define IOPLL_CON1_SET(x)	writel(x, (void *)PLL_CON1)
+
+#define IOPLL_CON2()		readl((void *)PLL_CON2)
+#define IOPLL_CON2_SET(x)	writel(x, (void *)PLL_CON2)
+
+#define IOPLL_ICR()		readl((void *)PLL_ICR)
+#define IOPLL_ICR_SET(x)	writel(x, (void *)PLL_ICR)
+
+#define IOPLL_OSC()		readl((void *)PLL_OSC)
+#define IOPLL_OSC_SET(x)	writel(x, (void *)PLL_OSC)
+
+#define IOPLL_STAT()		readl((void *)PLL_STAT)
+
+#define IOSCU_PLLCLC()		readl((void *)SCU_PLLCLC)
+#define IOSCU_PLLCLC_SET(x)	writel(x, (void *)SCU_PLLCLC)
+
+#define IOEBU_CON()		readl((void *)EBU_CON)
+#define IOEBU_CON_SET(x)	writel(x, (void *)EBU_CON)
+
+
+unsigned int init_pll(void)
+{
+    unsigned int result; // r0@3
+
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFFFF8) | 3 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFFF87) | 8 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFFF8FF) );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFFF87FF) | 0x1800 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFFF8FFFF) | 0x40000 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xFF87FFFF) | 0x80000 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0xF8FFFFFF) | 0x1000000 );
+    IOPLL_CON0_SET( (IOPLL_CON0() & 0x87FFFFFF) | 0x10000000 );
+
+    IOPLL_ICR_SET( IOPLL_ICR() & 0xFFFFEFFF );
+    IOPLL_OSC_SET( IOPLL_OSC() & 0xF0FFFFFF );
+    IOPLL_OSC_SET( (IOPLL_OSC() & 0xFFC0FFFF) | 0x30000 );
+    IOPLL_OSC_SET( IOPLL_OSC() | 0x1000u );
+    IOPLL_OSC_SET( IOPLL_OSC() | 0x100u );
+    IOPLL_OSC_SET( IOPLL_OSC() | 0x10u );
+    IOPLL_OSC_SET( IOPLL_OSC() | 1u );
+
+    while ( !(IOPLL_STAT() & 0x2000) );
+
+    IOPLL_CON2_SET( (IOPLL_CON2() & 0xFFFF3FFF) | 0x8000 );
+    result = (readl((void *)0xF45000B4) & 0xFCFFFFFF) | 0x1000000;
+    writel( (readl((void *)0xF45000B4) & 0xFCFFFFFF) | 0x1000000, (void *)0xF45000B4 );
+    return result;
+}
+
+
+unsigned int pll_reclock_104(void)
+{
+    unsigned int pll_con2, pll_con1 = IOPLL_CON1() & 0xFF8FFFFF;
+    
+    IOPLL_CON1_SET( pll_con1 | 0x200000 );
+    
+    IOSCU_PLLCLC_SET( IOSCU_PLLCLC() & 0xFFFFFFFE );
+    while ( !(IOSCU_PLLCLC() & 0x10) );
+    
+    pll_con2 = IOPLL_CON2() & 0x1000;
+    pll_con2 &= 0x370;
+    pll_con2 |= 0x70;
+    IOPLL_CON2_SET( pll_con2 );
+    
+    IOPLL_OSC_SET( IOPLL_OSC() & ~0x404 );
+    
+    writel( readl((void *)0xF4400040) | 1u, (void *)0xF4400040);
+    while ( !(readl((void *)0xF4400040) & 0x10) );
+    
+    IOEBU_CON_SET( IOEBU_CON() | 0x4000000u );
+    writel(0, (void *)0xF4400040);
+    
+    
+    writel( readl((void *)0xF4400040) | 1u, (void *)0xF4400040 );
+    while ( !(readl((void *)0xF4400040) & 0x10) );
+    
+    IOEBU_CON_SET( IOEBU_CON() & 0xFBFFFFFF );
+    writel(0, (void *)0xF4400040);
+    
+    return SCU_BASE;
+}
 
 
 static void pmb8876_switch_watchdog(void)
@@ -81,14 +190,15 @@ static void __init pmb8876_map_io(void)
 
 static void __init pmb8876_early_init(void)
 {
-
+    pr_info(" %s\n", __func__);
+    init_pll();
+    pll_reclock_104();
 }
 
 
 static void __init pmb8876_board_init(void)
 {
-    pr_info("%s(): HELLO BLJAD (.)(.)\n", __func__);
-
+    pr_info("Initializing PMB8876 board...\n");
 }
 
 
