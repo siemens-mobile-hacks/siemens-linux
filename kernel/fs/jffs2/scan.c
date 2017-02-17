@@ -863,17 +863,17 @@ scan_more:
 #endif	/* CONFIG_JFFS2_FS_XATTR */
 
 		case JFFS2_NODETYPE_CLEANMARKER:
-			jffs2_dbg(1, "CLEANMARKER node found at 0x%08x\n", ofs);
+			//jffs2_dbg(1, "CLEANMARKER node found at 0x%08x\n", ofs);
 			if (je32_to_cpu(node->totlen) != c->cleanmarker_size) {
-				pr_notice("CLEANMARKER node found at 0x%08x has totlen 0x%x != normal 0x%x\n",
+				/*pr_notice("CLEANMARKER node found at 0x%08x has totlen 0x%x != normal 0x%x\n",
 					  ofs, je32_to_cpu(node->totlen),
-					  c->cleanmarker_size);
+					  c->cleanmarker_size);*/
 				if ((err = jffs2_scan_dirty_space(c, jeb, PAD(sizeof(struct jffs2_unknown_node)))))
 					return err;
 				ofs += PAD(sizeof(struct jffs2_unknown_node));
 			} else if (jeb->first_node) {
-				pr_notice("CLEANMARKER node found at 0x%08x, not first node in block (0x%08x)\n",
-					  ofs, jeb->offset);
+				/*pr_notice("CLEANMARKER node found at 0x%08x, not first node in block (0x%08x)\n",
+					  ofs, jeb->offset);*/
 				if ((err = jffs2_scan_dirty_space(c, jeb, PAD(sizeof(struct jffs2_unknown_node)))))
 					return err;
 				ofs += PAD(sizeof(struct jffs2_unknown_node));

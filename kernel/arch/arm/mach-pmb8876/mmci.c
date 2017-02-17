@@ -16,7 +16,7 @@
 #include <linux/mmc/host.h>
 
 static int mmc_handle_ios(struct device *dev, struct mmc_ios *ios) {
-	pr_info("mmc_handle_ios=%d\n", ios->power_mode == MMC_POWER_OFF ? 0 : 1);
+	//pr_info("mmc_handle_ios=%d\n", ios->power_mode == MMC_POWER_OFF ? 0 : 1);
 	gpio_set_value(GPIO_MMC_VCC_EN, ios->power_mode == MMC_POWER_OFF ? 0 : 1);
 	return 0;
 }
@@ -26,24 +26,31 @@ static struct mmci_platform_data mmci_data = {
 };
 
 // 0x00041180 - ид разновидности железки в mmci.c
-static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {0}, &mmci_data);
+static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {0x94}, &mmci_data);
 static struct amba_device *amba_devs[] __initdata = {
 	&mmc0_device,
 };
 
-static int __init pmb8876_mmci_init(bool is_cp) {
+static int __init pmb8876_mmci_init(void) {
+	int i;
+	
 	gpio_request(GPIO_MMC_CLK, "GPIO_MMC_CLK");
 	gpio_request(GPIO_MMC_DAT, "GPIO_MMC_DAT");
 	gpio_request(GPIO_MMC_CMD, "GPIO_MMC_CMD");
 	gpio_request(GPIO_MMC_VCC_EN, "GPIO_MMC_VCC_EN");
 	
 	pr_info("pmb8876_mmci_init start\n");
-	writel(readl((void *) 0xF7300000) & ~3 | 2, (void *) 0xF7300000); // что-то из паршивки
-	int i;
+	
+	// writel(readl((void *) 0xF7300000) & ~3 | 2, (void *) 0xF7300000); // что-то из паршивки
+	
+	// максимальный размер карточки, наверно
+	writel(1024, (void *)0xF7300000);
+	
 	for (i = 0; i < ARRAY_SIZE(amba_devs); ++i) {
 		struct amba_device *d = amba_devs[i];
 		amba_device_register(d, &iomem_resource);
 	}
 	pr_info("pmb8876_mmci_init end\n");
+	return 0;
 }
 arch_initcall(pmb8876_mmci_init);
