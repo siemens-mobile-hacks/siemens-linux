@@ -15,43 +15,43 @@
 #include <linux/amba/bus.h>
 #include <linux/amba/mmci.h>
 #include <linux/mmc/host.h>
+#include <linux/clk-provider.h>
+#include <linux/clkdev.h>
 
 static int mmc_handle_ios(struct device *dev, struct mmc_ios *ios) {
 	gpio_set_value(GPIO_MMC_VCC_EN, ios->power_mode == MMC_POWER_OFF ? 0 : 1);
 	return 0;
 }
 static struct mmci_platform_data mmci_data = {
-	.ocr_mask		= MMC_VDD_165_195 | MMC_VDD_20_21 | MMC_VDD_21_22 | MMC_VDD_22_23 | MMC_VDD_23_24 | MMC_VDD_24_25 | MMC_VDD_25_26 | MMC_VDD_26_27 | MMC_VDD_27_28 | MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33 | MMC_VDD_33_34 | MMC_VDD_34_35 | MMC_VDD_35_36, 
+	.ocr_mask		= MMC_VDD_165_195 | MMC_VDD_20_21 | MMC_VDD_21_22 | MMC_VDD_22_23 | MMC_VDD_23_24 | MMC_VDD_24_25 | MMC_VDD_25_26 | MMC_VDD_26_27 | 
+		MMC_VDD_27_28 | MMC_VDD_28_29 | MMC_VDD_29_30 | MMC_VDD_30_31 | MMC_VDD_31_32 | MMC_VDD_32_33 | MMC_VDD_33_34 | MMC_VDD_34_35 | MMC_VDD_35_36, 
 	.ios_handler    = mmc_handle_ios, 
-	.gpio_cd		= GPIO_MMC_CD, 
-	.cd_invert		= 1
+	.gpio_cd		= -1, 
+	.gpio_wp		= -1
 };
 
-// 0x00041180 - ид разновидности железки в mmci.c
 static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {PMB8876_MMCI_IRQ}, &mmci_data);
-static struct amba_device *amba_devs[] __initdata = {
-	&mmc0_device,
-};
 
 static int __init pmb8876_mmci_init(void) {
 	int i;
-	
-	gpio_request(GPIO_MMC_CLK, "GPIO_MMC_CLK");
-	gpio_request(GPIO_MMC_DAT, "GPIO_MMC_DAT");
-	gpio_request(GPIO_MMC_CMD, "GPIO_MMC_CMD");
-	gpio_request(GPIO_MMC_VCC_EN, "GPIO_MMC_VCC_EN");
+	struct clk *clk_mmci;
 	
 	pr_info("pmb8876_mmci_init start\n");
 	
-	// writel(readl((void *) 0xF7300000) & ~3 | 2, (void *) 0xF7300000); // что-то из паршивки
+	// Фейковый clk с фиксированной частотой MMC
+	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, 400000);
+	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
-	// максимальный размер карточки, наверно
-	writel(1024, (void *)0xF7300000);
+	gpio_request(GPIO_MMC_CD, "MMCI_CD");
+	gpio_request(GPIO_MMC_CLK, "MMCI_CLK");
+	gpio_request(GPIO_MMC_DAT, "MMCI_DAT");
+	gpio_request(GPIO_MMC_CMD, "MMCI_CMD");
+	gpio_request(GPIO_MMC_VCC_EN, "MMCI_VCC_EN");
 	
-	for (i = 0; i < ARRAY_SIZE(amba_devs); ++i) {
-		struct amba_device *d = amba_devs[i];
-		amba_device_register(d, &iomem_resource);
-	}
+	writel(1024, (void *) 0xF7300000);
+	
+	amba_device_register(&mmc0_device, &iomem_resource);
+	
 	pr_info("pmb8876_mmci_init end\n");
 	return 0;
 }
