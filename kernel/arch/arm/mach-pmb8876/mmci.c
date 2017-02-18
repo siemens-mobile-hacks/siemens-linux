@@ -39,7 +39,7 @@ static int __init pmb8876_mmci_init(void) {
 	pr_info("pmb8876_mmci_init start\n");
 	
 	// Фейковый clk с фиксированной частотой MMC
-	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, 400000);
+	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 100000000, 100000000);
 	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
 	gpio_request(GPIO_MMC_CD, "MMCI_CD");
