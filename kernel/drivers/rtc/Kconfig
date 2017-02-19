@@ -147,6 +147,14 @@ comment "I2C RTC drivers"
 
 if I2C
 
+config RTC_DRV_PMB8876
+	tristate "PMB8876 RTC support"
+	help
+	  If you say yes here you get support for RTC function in PMB8876 chips.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called rtc-pmb8876.
+
 config RTC_DRV_88PM860X
 	tristate "Marvell 88PM860x"
 	depends on MFD_88PM860X
