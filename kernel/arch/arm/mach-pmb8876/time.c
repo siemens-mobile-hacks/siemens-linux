@@ -23,14 +23,26 @@
 
 
 /* register */
+#define PMB8876_GSM_TPU_CLC		0xF6400000
 #define PMB8876_GSM_TPU_CON		0xF64000F8
 
 /* flags */
 #define PMB8876_GSM_TPU_CON_RESET	0x4000
 #define PMB8876_GSM_TPU_CON_ENABLE	0x1000
+#define PMB8876_GSM_TPU_CLC_RMC(x)	((x << 8) & 0x127)
+
+/* freq */
+#define PMB8876_GSM_CLOCK_FREQ		21660000
 
 
-#define PMB8876_GSM_CLOCK_FREQ		2166000
+/* STM */
+#define PMB8876_STM_CLC			0xF4B00000
+#define PMB8876_STM_ID 			0xF4B00008
+#define PMB8876_STM_0			0xF4B00010
+
+#define PMB8876_STM_CLC_RMC(x)		((x << 8) & 0x7)
+
+#define PMB8876_STM_CLOCK_FREQ		26000000
 
 
 #define MAX_DELTA		(0xfffffffe)
@@ -45,19 +57,19 @@
 
 static int pmb8876_set_periodic(struct clock_event_device *evt)
 {
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE | PMB8876_GSM_TPU_CON_RESET);
+	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET);
+	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
 	writel(pmb8876_irq_priority(PMB8876_GSM_TIMER_IRQ), (void *)(PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ)));
 	return 0;
 }
 
-/*
 static int pmb8876_timer_set_next_event(unsigned long ticks,
 				     struct clock_event_device *evt)
 {
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
+	//pr_info("Set next event %d\n", ticks);
+	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET | PMB8876_GSM_TPU_CON_ENABLE);
 	return 0;
 }
-*/
 
 /*
  * Whenever anyone tries to change modes, we just mask interrupts
@@ -70,11 +82,10 @@ static int pmb8876_timer_shutdown(struct clock_event_device *evt)
 	return 0;
 }
 
-
 static struct clock_event_device clockevent_pmb8876 = {
-	.name = "PMB8876 Timer",
-	.features = /*CLOCK_EVT_FEAT_ONESHOT*/ CLOCK_EVT_FEAT_PERIODIC,
-	.rating = 216,
+	.name = "PMB8876 clockevent",
+	.features = /*CLOCK_EVT_FEAT_ONESHOT,*/ CLOCK_EVT_FEAT_PERIODIC,
+	.rating = 200,
 	.irq = PMB8876_GSM_TIMER_IRQ,
 	
 	//.set_next_event = pmb8876_timer_set_next_event,
@@ -83,6 +94,29 @@ static struct clock_event_device clockevent_pmb8876 = {
 	.set_state_oneshot = pmb8876_timer_shutdown,
 	.tick_resume = pmb8876_timer_shutdown,
 };
+
+
+
+static cycle_t clksrc_read(struct clocksource *cs)
+{
+    cycle_t cyc;
+    unsigned long flags;
+    
+    local_irq_save(flags);
+    cyc = __raw_readl((void *)PMB8876_STM_0);
+    local_irq_restore(flags);
+    
+    return cyc;
+}
+
+static struct clocksource cksrc = {
+	.name		= "PMB8876 clocksource",
+	.rating		= 200,
+	.read		= clksrc_read,
+	.mask		= CLOCKSOURCE_MASK(32),
+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+};
+
 
 
 /*
@@ -96,8 +130,18 @@ void setup_pmb8876_timer(void)
 	/* Mark as being for this cpu only. */
 	evt->cpumask = cpumask_of(smp_processor_id());
 	
-	/* init GSM timer */
-	writel(256, (void *)0xF6400000);
+	
+	/* 
+	 * init STM clock source 
+	 * bit16 - хз
+	 */
+	//writel( PMB8876_STM_CLC_RMC(1), (void *)PMB8876_STM_CLC);
+	
+	
+	/* 
+	 * init GSM timer
+	 */
+	writel(PMB8876_GSM_TPU_CLC_RMC(1), (void *)PMB8876_GSM_TPU_CLC);
 	writel(1, (void *)0xF6400068);
 	writel(4, (void *)0xF640006C);
 	writel(2, (void *)0xF6400070);
@@ -116,8 +160,7 @@ void setup_pmb8876_timer(void)
 	writel(6, (void *)0xF640003C);
 	writel(0x80000000, (void *)0xF6400044);
 
-	// magic
-	writel((unsigned int)(((PMB8876_GSM_CLOCK_FREQ / (HZ * 10)) + 1) * 4.615), (void *)0xF6400020);
+	writel( ((PMB8876_GSM_CLOCK_FREQ / 2) / (HZ * 10)) - 1 , (void *)0xF6400020);
 	
 	writel(0, (void *)0xF640002C);
 	writel(0, (void *)0xF6400024);
@@ -126,10 +169,12 @@ void setup_pmb8876_timer(void)
 	writel(0x7530, (void *)0xF6400028);
 	writel(3, (void *)0xF640005C);
 	
-	
 	/* Start out with timer not firing. */
 	writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ) );
-
+	
+	/* */
+	clocksource_register_hz(&cksrc, PMB8876_STM_CLOCK_FREQ);
+	
 	/* Register pmb8876 timer. */
 	clockevents_config_and_register(evt, PMB8876_GSM_CLOCK_FREQ,
 					MIN_DELTA, MAX_DELTA);
@@ -141,7 +186,7 @@ static irqreturn_t pmb8876_timer_interrupt(int irq, void *dev_id)
 	struct clock_event_device *evt = (&clockevent_pmb8876);
 	
 	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET);
-
+	
 	evt->event_handler(evt);
 	return IRQ_HANDLED;
 }

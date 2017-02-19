@@ -12,6 +12,7 @@
 #include <linux/gpio.h>
 #include <linux/bitops.h>
 #include <mach/pmb8876-gpio.h>
+#include <mach/irqs.h>
 #include <linux/amba/bus.h>
 #include <linux/amba/mmci.h>
 #include <linux/mmc/host.h>
@@ -39,7 +40,7 @@ static int __init pmb8876_mmci_init(void) {
 	pr_info("pmb8876_mmci_init start\n");
 	
 	// Фейковый clk с фиксированной частотой MMC
-	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 100000000, 100000000);
+	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, /*4800000*/4000000);
 	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
 	gpio_request(GPIO_MMC_CD, "MMCI_CD");
@@ -48,7 +49,9 @@ static int __init pmb8876_mmci_init(void) {
 	gpio_request(GPIO_MMC_CMD, "MMCI_CMD");
 	gpio_request(GPIO_MMC_VCC_EN, "MMCI_VCC_EN");
 	
-	writel(1024, (void *) 0xF7300000);
+	writel(1024, (void *)0xF7300000);
+	
+	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 0xa);
 	
 	amba_device_register(&mmc0_device, &iomem_resource);
 	
