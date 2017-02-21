@@ -33,13 +33,10 @@ static struct mmci_platform_data mmci_data = {
 
 static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {PMB8876_MMCI_IRQ}, &mmci_data);
 
+
 static int __init pmb8876_mmci_init(void) {
-	int i;
 	struct clk *clk_mmci;
 	
-	pr_info("pmb8876_mmci_init start\n");
-	
-	// Фейковый clk с фиксированной частотой MMC
 	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, /*4800000*/4000000);
 	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
@@ -50,12 +47,9 @@ static int __init pmb8876_mmci_init(void) {
 	gpio_request(GPIO_MMC_VCC_EN, "MMCI_VCC_EN");
 	
 	writel(1024, (void *)0xF7300000);
-	
-	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 0xa);
+	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 0xA);
 	
 	amba_device_register(&mmc0_device, &iomem_resource);
-	
-	pr_info("pmb8876_mmci_init end\n");
 	return 0;
 }
 arch_initcall(pmb8876_mmci_init);

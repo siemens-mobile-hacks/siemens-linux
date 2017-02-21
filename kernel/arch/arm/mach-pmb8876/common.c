@@ -33,7 +33,6 @@ static struct platform_device *pmb8876_devices[] __initdata = {
 
 static int __init pmb8876_init(void)
 {
-	pr_info(" -> Add devices!");
 	//pm_power_off = pmb8876_power_off;
 	return platform_add_devices(pmb8876_devices, ARRAY_SIZE(pmb8876_devices));
 }

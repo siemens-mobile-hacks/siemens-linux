@@ -10,6 +10,7 @@
 #include <linux/clockchips.h>
 #include <linux/hardirq.h>
 #include <linux/sched.h>
+#include <linux/sched_clock.h>
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/module.h>
@@ -97,16 +98,21 @@ static struct clock_event_device clockevent_pmb8876 = {
 
 
 
+
+static u64 read_sched_clock(void)
+{
+    u64 cyc;
+    //unsigned long flags;
+    
+    //local_irq_save(flags);
+    cyc = __raw_readl((void *)PMB8876_STM_0);
+    //local_irq_restore(flags);
+    return cyc;
+}
+
 static cycle_t clksrc_read(struct clocksource *cs)
 {
-    cycle_t cyc;
-    unsigned long flags;
-    
-    local_irq_save(flags);
-    cyc = __raw_readl((void *)PMB8876_STM_0);
-    local_irq_restore(flags);
-    
-    return cyc;
+    return (cycle_t)read_sched_clock();
 }
 
 static struct clocksource cksrc = {
@@ -122,7 +128,7 @@ static struct clocksource cksrc = {
 /*
  * Setup timer clock event device
  */
-void setup_pmb8876_timer(void)
+void __init setup_pmb8876_timer(void)
 {
 	struct clock_event_device *evt = (&clockevent_pmb8876);
 	unsigned int i = 0;
@@ -174,6 +180,8 @@ void setup_pmb8876_timer(void)
 	
 	/* */
 	clocksource_register_hz(&cksrc, PMB8876_STM_CLOCK_FREQ);
+	
+	sched_clock_register(read_sched_clock, 32, PMB8876_STM_CLOCK_FREQ);
 	
 	/* Register pmb8876 timer. */
 	clockevents_config_and_register(evt, PMB8876_GSM_CLOCK_FREQ,
