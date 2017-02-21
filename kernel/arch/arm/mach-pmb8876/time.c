@@ -46,29 +46,55 @@
 #define PMB8876_STM_CLOCK_FREQ		26000000
 
 
-#define MAX_DELTA		(0xfffffffe)
-#define MIN_DELTA		(16)
+#define MAX_DELTA			( 9999999 )
+#define MIN_DELTA			( 10 )
 
 
-#define GSM_CON()		readl((void *)PMB8876_GSM_TPU_CON)
-#define GSM_CON_SET(x)		writel(x, (void *)PMB8876_GSM_TPU_CON);
+#define GSM_CON()			readl((void *)PMB8876_GSM_TPU_CON)
+#define GSM_CON_SET(x)			writel(x, (void *)PMB8876_GSM_TPU_CON);
 
 
 
+static int pmb8876_timer_type_oneshot = 0;
 
-static int pmb8876_set_periodic(struct clock_event_device *evt)
-{
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET);
-	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
-	writel(pmb8876_irq_priority(PMB8876_GSM_TIMER_IRQ), (void *)(PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ)));
-	return 0;
-}
+
 
 static int pmb8876_timer_set_next_event(unsigned long ticks,
 				     struct clock_event_device *evt)
 {
-	//pr_info("Set next event %d\n", ticks);
+	u64 sleep = (ticks);
+	writel(sleep, (void *)0xF6400020);
+	
+	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_ENABLE);
+	return 0;
+}
+
+static int pmb8876_set_periodic(struct clock_event_device *evt)
+{
+	pr_info("PMB8876: Setup periodic timer type\n");
+	pmb8876_timer_type_oneshot = 0;
+	
+	/* setup periodic rate */
+	writel( ((PMB8876_GSM_CLOCK_FREQ / 2) / (HZ * 10)) - 1 , (void *)0xF6400020);
+	
+	/* reset and enable the timer */
 	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET | PMB8876_GSM_TPU_CON_ENABLE);
+	
+	/* enable irq */
+	writel(pmb8876_irq_priority(PMB8876_GSM_TIMER_IRQ), (void *)(PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ)));
+	return 0;
+}
+
+static int pmb8876_timer_oneshot(struct clock_event_device *evt)
+{	
+	pr_info("PMB8876: Setup oneshot timer type(dynticks)\n");
+	pmb8876_timer_type_oneshot = 1;
+	
+	/* disable timer */
+	GSM_CON_SET(GSM_CON() & ~PMB8876_GSM_TPU_CON_ENABLE);
+	
+	/* enable irq */
+	writel(pmb8876_irq_priority(PMB8876_GSM_TIMER_IRQ), (void *)(PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ)));
 	return 0;
 }
 
@@ -78,22 +104,24 @@ static int pmb8876_timer_set_next_event(unsigned long ticks,
  */
 static int pmb8876_timer_shutdown(struct clock_event_device *evt)
 {
+	/* disable irq */
 	writel(PMB8876_IRQ_MASK, (void *)(PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ)));
+	
+	/* disable timer */
 	GSM_CON_SET(GSM_CON() & ~PMB8876_GSM_TPU_CON_ENABLE);
 	return 0;
 }
 
 static struct clock_event_device clockevent_pmb8876 = {
-	.name = "PMB8876 clockevent",
-	.features = /*CLOCK_EVT_FEAT_ONESHOT,*/ CLOCK_EVT_FEAT_PERIODIC,
-	.rating = 200,
-	.irq = PMB8876_GSM_TIMER_IRQ,
+	.name			= "PMB8876 clockevent",
+	.features		= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
+	.rating			= 100,
+	.irq			= PMB8876_GSM_TIMER_IRQ,
 	
-	//.set_next_event = pmb8876_timer_set_next_event,
+	.set_next_event		= pmb8876_timer_set_next_event,
 	.set_state_periodic	= pmb8876_set_periodic,
-	.set_state_shutdown = pmb8876_timer_shutdown,
-	.set_state_oneshot = pmb8876_timer_shutdown,
-	.tick_resume = pmb8876_timer_shutdown,
+	.set_state_shutdown	= pmb8876_timer_shutdown,
+	.set_state_oneshot	= pmb8876_timer_oneshot,
 };
 
 
@@ -132,6 +160,7 @@ void __init setup_pmb8876_timer(void)
 {
 	struct clock_event_device *evt = (&clockevent_pmb8876);
 	unsigned int i = 0;
+	u32 stm_clc;
 	
 	/* Mark as being for this cpu only. */
 	evt->cpumask = cpumask_of(smp_processor_id());
@@ -142,7 +171,8 @@ void __init setup_pmb8876_timer(void)
 	 * bit16 - хз
 	 */
 	//writel( PMB8876_STM_CLC_RMC(1), (void *)PMB8876_STM_CLC);
-	
+	stm_clc = readl((void *)PMB8876_STM_CLC);
+	pr_info("STM CLC: flags %X, div %d\n", stm_clc, (stm_clc >> 8) & 0x7);
 	
 	/* 
 	 * init GSM timer
@@ -178,9 +208,10 @@ void __init setup_pmb8876_timer(void)
 	/* Start out with timer not firing. */
 	writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(PMB8876_GSM_TIMER_IRQ) );
 	
-	/* */
+	/* add external clock source */
 	clocksource_register_hz(&cksrc, PMB8876_STM_CLOCK_FREQ);
 	
+	/* set scheduler clocking */
 	sched_clock_register(read_sched_clock, 32, PMB8876_STM_CLOCK_FREQ);
 	
 	/* Register pmb8876 timer. */
@@ -192,8 +223,11 @@ void __init setup_pmb8876_timer(void)
 static irqreturn_t pmb8876_timer_interrupt(int irq, void *dev_id)
 {
 	struct clock_event_device *evt = (&clockevent_pmb8876);
-	
 	GSM_CON_SET(GSM_CON() | PMB8876_GSM_TPU_CON_RESET);
+	
+	if( pmb8876_timer_type_oneshot ) {
+	    GSM_CON_SET(GSM_CON() & ~PMB8876_GSM_TPU_CON_ENABLE);
+	}
 	
 	evt->event_handler(evt);
 	return IRQ_HANDLED;
