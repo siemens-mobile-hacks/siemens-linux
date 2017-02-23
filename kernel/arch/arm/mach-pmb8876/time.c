@@ -46,7 +46,7 @@
 #define PMB8876_STM_CLOCK_FREQ		26000000
 
 
-#define MAX_DELTA			( 9999999 )
+#define MAX_DELTA			( 32767 )
 #define MIN_DELTA			( 10 )
 
 
