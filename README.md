@@ -1,7 +1,7 @@
 # siemens-linux
 Linux for Siemens EL71 (pmb8876)
 
-Done at this moment:
+# Done at this moment:
 1. MMU support
 2. PLL re-clocking for 104 MHz
 3. EBU unlock 16m of ram(done with bootloader)
