@@ -3,6 +3,13 @@
 #
 
 # big LITTLE core layer and glue drivers
+
+config ARM_PMB8876_CPUFREQ
+	tristate "PMB8876 cpufreq driver"
+	depends on ARCH_PMB8876
+	help
+	  This enables the PMB8876 cpufreq driver
+
 config ARM_BIG_LITTLE_CPUFREQ
 	tristate "Generic ARM big LITTLE CPUfreq driver"
 	depends on (ARM_CPU_TOPOLOGY || ARM64) && HAVE_CLK

@@ -91,7 +91,7 @@
 #define IOEBU_CON_SET(x)	writel(x, (void *)EBU_CON)
 
 
-unsigned int init_pll(void)
+static unsigned int init_pll(void)
 {
     unsigned int result; // r0@3
 
@@ -121,21 +121,34 @@ unsigned int init_pll(void)
 }
 
 
-unsigned int pll_reclock_104(void)
+static void EBU_wtf_clock_reinit_2(void)
 {
-    unsigned int pll_con2, pll_con1 = IOPLL_CON1() & 0xFF8FFFFF;
+    writel( readl((void *)0xF4400044) | 1u, (void *)0xF4400040 );
+    while ( !(readl((void *)0xF4400044) & 0x10) );
+}
+
+
+// 1 - 26 MHz
+// 2 - 78 MHz
+// 3 - 104 MHz
+// 4 - 130 MHz
+// 5 - 156 MHz
+
+void pmb8876_pll_reclock(char by)
+{
+    writel((by << 16) | (0 << 12) | (5 << 8) | 5, (void *)PLL_OSC);
+    //printk(" -> osc: %X\n", readl((void *)PLL_OSC));
+
+    writel((0 << 8) /*| 0x10000000*/ | 0x70, PLL_CON2);
+    //printk(" -> con2: %X\n", readl((void *)PLL_CON2));
     
-    IOPLL_CON1_SET( pll_con1 | 0x200000 );
+    EBU_wtf_clock_reinit_2();
     
-    IOSCU_PLLCLC_SET( IOSCU_PLLCLC() & 0xFFFFFFFE );
-    while ( !(IOSCU_PLLCLC() & 0x10) );
+    writel((2 << 20) | (0 << 16) | 0, PLL_CON1);
+    //printk(" -> con1: %X\n", readl((void *)PLL_CON1));
     
-    pll_con2 = IOPLL_CON2() & 0x1000;
-    pll_con2 &= 0x370;
-    pll_con2 |= 0x70;
-    IOPLL_CON2_SET( pll_con2 );
-    
-    IOPLL_OSC_SET( IOPLL_OSC() & ~0x404 );
+    //writel(0x10000303, (void *)0xF45000B4);
+    //printk(" -> b4: %X\n", readl((void *)0xF45000B4));
     
     writel( readl((void *)0xF4400040) | 1u, (void *)0xF4400040);
     while ( !(readl((void *)0xF4400040) & 0x10) );
@@ -149,8 +162,31 @@ unsigned int pll_reclock_104(void)
     
     IOEBU_CON_SET( IOEBU_CON() & 0xFBFFFFFF );
     writel(0, (void *)0xF4400040);
+}
+
+
+unsigned int pmb8876_pll_get_cpu_rate(void)
+{
+    u32 osc = readl((void *)PLL_OSC);
     
-    return SCU_BASE;
+    switch( (osc >> 16) & 0x5 ) {
+	case 1:
+	    return 26000;
+	    
+	case 2:
+	    return 78000;
+	    
+	case 3:
+	    return 104000;
+	    
+	case 4:
+	    return 130000;
+	    
+	case 5:
+	    return 156000;
+    }
+    
+    return -1;
 }
 
 
@@ -192,7 +228,7 @@ static void __init pmb8876_early_init(void)
 {
     pr_info(" %s\n", __func__);
     init_pll();
-    pll_reclock_104();
+    pmb8876_pll_reclock(5);
 }
 
 

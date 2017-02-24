@@ -47,7 +47,7 @@ static int __init pmb8876_mmci_init(void) {
 	gpio_request(GPIO_MMC_VCC_EN, "MMCI_VCC_EN");
 	
 	writel(1024, (void *)0xF7300000);
-	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 0xA);
+	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 1);
 	
 	amba_device_register(&mmc0_device, &iomem_resource);
 	return 0;

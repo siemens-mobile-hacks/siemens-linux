@@ -52,7 +52,7 @@ void pmb8876_timer_callback( unsigned long data )
 	}
 	//pr_info("Serve warchdog...\n");
 	
-	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(2500));
+	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(1000));
 }
 
 
@@ -64,7 +64,7 @@ int __init pmb8876_init_watchdog(void)
 	 *  Watchdog keep-alive timer
 	 */
 	setup_timer(&pmb8876_watchdog_timer, pmb8876_timer_callback, 0);
-	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(1300));
+	mod_timer(&pmb8876_watchdog_timer, jiffies + msecs_to_jiffies(1000));
 	return 0;
 }
 arch_initcall(pmb8876_init_watchdog);
