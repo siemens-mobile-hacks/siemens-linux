@@ -53,7 +53,7 @@
 #define SERIAL_PMB8876_MAJOR			204
 #define SERIAL_PMB8876_MINOR			16
 #define SERIAL_PMB8876_DEVNAME			"ttyAM"
-#define SERIAL_PMB8876_NR				2
+#define SERIAL_PMB8876_NR			2
 #define PMB8876_UART_PORT_SIZE			0x80
 #define PMB8876_UART_FIFO_SIZE			8
 
@@ -724,7 +724,7 @@ static struct uart_port pmb8876uart_ports[] = {
 		.fifosize	= PMB8876_UART_FIFO_SIZE,
 		.ops		= &pmb8876uart_pops,
 		.flags		= UPF_BOOT_AUTOCONF,
-		.line		= 0,
+		.line		= 1,
 	}
 };
 
@@ -835,11 +835,11 @@ OF_EARLYCON_DECLARE(PMB8876, "PMB8876,pmb8876-uart",
 
 static struct uart_driver pmb8876_reg = {
 	.owner			= THIS_MODULE,
-	.driver_name	= "serial_pmb8876",
+	.driver_name		= "serial_pmb8876",
 	.dev_name		= SERIAL_PMB8876_DEVNAME,
 	.major			= SERIAL_PMB8876_MAJOR,
 	.minor			= SERIAL_PMB8876_MINOR,
-	.nr				= SERIAL_PMB8876_NR,
+	.nr			= SERIAL_PMB8876_NR,
 	.cons			= PMB8876_CONSOLE,
 };
 
