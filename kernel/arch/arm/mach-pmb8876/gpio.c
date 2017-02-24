@@ -52,7 +52,7 @@ static int pmb8876_gpio_request(struct gpio_chip *chip, unsigned offset)
 	}
 	
 	// Устанавливаем сначала ENAQ, что бы при переключении IS/OS мусор не попал в пины
-	if ((pmb8876_gpio_reg_get_is(flags) || pmb8876_gpio_reg_get_os(flags)) && !pmb8876_gpio_reg_get_enaq(flags))
+	if ((pmb8876_gpio_reg_get_is(flags) || pmb8876_gpio_reg_get_os(flags)) && !pmb8876_gpio_reg_get_enaq(flags) && readl((void *) PMB8876_GPIO_PIN(offset)) != flags)
 		writel(flags | (1 << PMB8876_GPIO_ENAQ), (void *) PMB8876_GPIO_PIN(offset));
 	
 	writel(flags, (void *) PMB8876_GPIO_PIN(offset));
