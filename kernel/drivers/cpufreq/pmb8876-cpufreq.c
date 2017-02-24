@@ -104,10 +104,7 @@ static int pmb8876_cpu_init(struct cpufreq_policy *policy)
 	return 0;
 }
 
-static int pmb8876_cpu_exit(struct cpufreq_policy *policy)
-{
-	return 0;
-}
+
 
 static struct cpufreq_driver pmb8876_cpufreq_driver = {
 	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,

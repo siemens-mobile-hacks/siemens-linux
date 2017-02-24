@@ -139,12 +139,12 @@ void pmb8876_pll_reclock(char by)
     writel((by << 16) | (0 << 12) | (5 << 8) | 5, (void *)PLL_OSC);
     //printk(" -> osc: %X\n", readl((void *)PLL_OSC));
 
-    writel((0 << 8) /*| 0x10000000*/ | 0x70, PLL_CON2);
+    writel((0 << 8) /*| 0x10000000*/ | 0x70, (void *)PLL_CON2);
     //printk(" -> con2: %X\n", readl((void *)PLL_CON2));
     
     EBU_wtf_clock_reinit_2();
     
-    writel((2 << 20) | (0 << 16) | 0, PLL_CON1);
+    writel((2 << 20) | (0 << 16) | 0, (void *)PLL_CON1);
     //printk(" -> con1: %X\n", readl((void *)PLL_CON1));
     
     //writel(0x10000303, (void *)0xF45000B4);
