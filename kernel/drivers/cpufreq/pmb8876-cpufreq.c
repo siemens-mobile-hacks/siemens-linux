@@ -28,17 +28,20 @@
 #include <linux/io.h>
 
 
-unsigned int pmb8876_pll_get_cpu_rate(void);
-void pmb8876_pll_reclock(char by);
-
-
+int pmb8876_get_cpu_rate(void);
+int pmb8876_set_cpu_rate(int mhz);
 
 static struct cpufreq_frequency_table freq_table[] = {
+	{ .frequency = 12000 },
+	{ .frequency = 18000 },
 	{ .frequency = 26000 },
+	{ .frequency = 52000 },
 	{ .frequency = 78000 },
 	{ .frequency = 104000 },
-	{ .frequency = 130000 },
 	{ .frequency = 156000 },
+	{ .frequency = 208000 },
+	{ .frequency = 260000 },
+	{ .frequency = 312000 },
 	{ .frequency = CPUFREQ_TABLE_END },
 };
 
@@ -48,13 +51,37 @@ static struct cpufreq_frequency_table freq_table[] = {
 
 static unsigned int pmb8876_get_cpu_frequency(unsigned int cpu)
 {
-	return pmb8876_pll_get_cpu_rate();
+	return pmb8876_get_cpu_rate();
 }
 
 
-static int pmb8876_target(struct cpufreq_policy *policy, unsigned int index)
+static int pmb8876_target_index(struct cpufreq_policy *policy,
+			  unsigned int index)
 {
 	unsigned long rate = freq_table[index].frequency;
+
+	if ((rate > policy->max) || (rate < policy->min))
+		return -EINVAL;
+	
+	return pmb8876_set_cpu_rate(rate);
+}
+/*
+static int pmb8876_target(struct cpufreq_policy *policy,
+			  unsigned int target_freq, unsigned int relation)
+{
+	//unsigned long rate = freq_table[index].frequency;
+	unsigned long rate  = target_freq;
+	struct cpufreq_freqs freqs;
+	
+	if ((target_freq > policy->max) || (target_freq < policy->min))
+		return -EINVAL;
+	
+	freqs.old = pmb8876_pll_get_cpu_rate();
+	freqs.new = rate;
+	freqs.flags = 0;
+	
+	
+	cpufreq_freq_transition_begin(policy, &freqs);
 	
 	switch(rate)
 	{
@@ -79,13 +106,15 @@ static int pmb8876_target(struct cpufreq_policy *policy, unsigned int index)
 		break;
 		
 	    default:
+		cpufreq_freq_transition_end(policy, &freqs, 1);
 		return -1;
 	}
 	
-	//pr_info("Set cpu rate: %d\n", rate);
+	cpufreq_freq_transition_end(policy, &freqs, 0);
+	pr_info("Set cpu rate: %d\n", rate);
 	return 0;
 }
-
+*/
 static int pmb8876_cpu_init(struct cpufreq_policy *policy)
 {
 	int ret;
@@ -95,6 +124,8 @@ static int pmb8876_cpu_init(struct cpufreq_policy *policy)
 
 	pr_info("Init CPU freq driver...\n");
 
+	policy->min = 12000;
+	policy->max = 312000;
 	/* FIXME: what's the actual transition time? */
 	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
 	if (ret) {
@@ -109,7 +140,8 @@ static int pmb8876_cpu_init(struct cpufreq_policy *policy)
 static struct cpufreq_driver pmb8876_cpufreq_driver = {
 	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
 	.verify			= cpufreq_generic_frequency_table_verify,
-	.target_index		= pmb8876_target,
+	//.target			= pmb8876_target,
+	.target_index		= pmb8876_target_index,
 	.get			= pmb8876_get_cpu_frequency,
 	.init			= pmb8876_cpu_init,
 	.name			= "PMB8876",

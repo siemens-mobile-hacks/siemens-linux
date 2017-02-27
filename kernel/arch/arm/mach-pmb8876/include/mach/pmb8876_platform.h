@@ -16,11 +16,10 @@
 
 int pmb8876_serve_watchdog(void);
 
-
 void pmb8876_init_irq(void);
 void pmb8876_init_time(void);
 
-
+void pmb8876_cpu_clock_init(void);
 
 
 #endif /* __PMB8876_PLATFORM_H__ */

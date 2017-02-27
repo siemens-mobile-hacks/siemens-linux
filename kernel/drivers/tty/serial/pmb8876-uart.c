@@ -59,29 +59,30 @@
 
 
 /* REGS */
-#define PMB8876_USART0_BASE				0xf1000000
-#define PMB8876_USART1_BASE				0xf1800000
-#define PMB8876_USART0_CLC(base)		(base)
-#define PMB8876_USART0_PISEL(base)		(base + 0x04)
-#define PMB8876_USART0_ID(base)			(base + 0x08)
-#define PMB8876_USART0_CON(base)		(base + 0x10)
-#define PMB8876_USART0_BG(base)			(base + 0x14)
-#define PMB8876_USART0_FDV(base)		(base + 0x18)
-#define PMB8876_USART0_PMW(base)		(base + 0x1C)
-#define PMB8876_USART0_TXB(base)		(base + 0x20)
-#define PMB8876_USART0_RXB(base)		(base + 0x24)
-#define PMB8876_USART0_ABCON(base)		(base + 0x30)
-#define PMB8876_USART0_ABSTAT(base)		(base + 0x34)
-#define PMB8876_USART0_RXFCON(base)		(base + 0x40)
-#define PMB8876_USART0_TXFCON(base)		(base + 0x44)
-#define PMB8876_USART0_FSTAT(base)		(base + 0x48)
-#define PMB8876_USART0_WHBCON(base)		(base + 0x50)
-#define PMB8876_USART0_IMSC(base)		(base + 0x64)
-#define PMB8876_USART0_FCSTAT(base)		(base + 0x68)
-#define PMB8876_USART0_ICR(base)		(base + 0x70)
-#define PMB8876_USART0_ISR(base)		(base + 0x74)
+#define PMB8876_USART0_BASE			0xf1000000
+#define PMB8876_USART1_BASE			0xf1800000
+#define PMB8876_USART_CLC(base)			(base)
+#define PMB8876_USART_PISEL(base)		(base + 0x04)
+#define PMB8876_USART_ID(base)			(base + 0x08)
+#define PMB8876_USART_CON(base)			(base + 0x10)
+#define PMB8876_USART_BG(base)			(base + 0x14)
+#define PMB8876_USART_FDV(base)			(base + 0x18)
+#define PMB8876_USART_PMW(base)			(base + 0x1C)
+#define PMB8876_USART_TXB(base)			(base + 0x20)
+#define PMB8876_USART_RXB(base)			(base + 0x24)
+#define PMB8876_USART_ABCON(base)		(base + 0x30)
+#define PMB8876_USART_ABSTAT(base)		(base + 0x34)
+#define PMB8876_USART_RXFCON(base)		(base + 0x40)
+#define PMB8876_USART_TXFCON(base)		(base + 0x44)
+#define PMB8876_USART_FSTAT(base)		(base + 0x48)
+#define PMB8876_USART_WHBCON(base)		(base + 0x50)
+#define PMB8876_USART_FCCON(base)		(base + 0x5C)	/* Flowcontrol control register */
+#define PMB8876_USART_IMSC(base)		(base + 0x64)
+#define PMB8876_USART_FCSTAT(base)		(base + 0x68)
+#define PMB8876_USART_ICR(base)			(base + 0x70)
+#define PMB8876_USART_ISR(base)			(base + 0x74)
 
-#define PMB8876_CLOCK_RATE 				26000000
+#define PMB8876_CLOCK_RATE 			26000000
 
 /* BITS */
 #define CLC_SMC_CLK_DIV(x)	((x << 16) & 0xFF0000)
@@ -180,13 +181,13 @@
  * UART IO
  */
 
-#define UART_PUT_CHAR(port, c)		__raw_writel(c, (void *)PMB8876_USART0_TXB(port->mapbase))
-#define UART_GET_CHAR(port)			__raw_readl((void *)PMB8876_USART0_RXB(port->mapbase))
-#define PMB8876_CLR_TX_INT(port)	__raw_writel(ICR_TX, (void *)PMB8876_USART0_ICR(port->mapbase))
-#define PMB8876_CLR_RX_INT(port)	__raw_writel(ICR_RX, (void *)PMB8876_USART0_ICR(port->mapbase))
-#define UART_FSTAT(port)			__raw_readl((void *)PMB8876_USART0_FSTAT(port->mapbase))
-#define UART_FCSTAT(port)			__raw_readl((void *)PMB8876_USART0_FCSTAT(port->mapbase))
-#define UART_CON(port)				__raw_readl((void *)PMB8876_USART0_CON(port->mapbase))
+#define UART_PUT_CHAR(port, c)		__raw_writel(c, (void *)PMB8876_USART_TXB(port->mapbase))
+#define UART_GET_CHAR(port)			__raw_readl((void *)PMB8876_USART_RXB(port->mapbase))
+#define PMB8876_CLR_TX_INT(port)	__raw_writel(ICR_TX, (void *)PMB8876_USART_ICR(port->mapbase))
+#define PMB8876_CLR_RX_INT(port)	__raw_writel(ICR_RX, (void *)PMB8876_USART_ICR(port->mapbase))
+#define UART_FSTAT(port)			__raw_readl((void *)PMB8876_USART_FSTAT(port->mapbase))
+#define UART_FCSTAT(port)			__raw_readl((void *)PMB8876_USART_FCSTAT(port->mapbase))
+#define UART_CON(port)				__raw_readl((void *)PMB8876_USART_CON(port->mapbase))
 
 enum {
 	UART_SPEED_57600 = 0x001901d8, 
@@ -289,28 +290,31 @@ static struct console pmb8876_console;
 
 static void pmb8876uart_stop_tx(struct uart_port *port)
 {
+	u32 irq_base = port->irq;
 	if (tx_enabled(port)) {
 		/* use disable_irq_nosync() and not disable_irq() to avoid self
 		 * imposed deadlock by not waiting for irq handler to end,
 		 * since this pmb8876uart_stop_tx() is called from interrupt context.
 		 */
-		disable_irq_nosync(PMB8876_UART_TX_IRQ);
+		disable_irq_nosync(irq_base + PMB8876_UART_TX_IRQ_OFF);
 		tx_enable(port, 0);
 	}
 }
 
 static void pmb8876uart_start_tx(struct uart_port *port)
 {
+	u32 irq_base = port->irq;
 	if (!tx_enabled(port)) {
-		enable_irq(PMB8876_UART_TX_IRQ);
+		enable_irq(irq_base + PMB8876_UART_TX_IRQ_OFF);
 		tx_enable(port, 1);
 	}
 }
 
 static void pmb8876uart_stop_rx(struct uart_port *port)
 {
+	u32 irq_base = port->irq;
 	if (rx_enabled(port)) {
-		disable_irq(PMB8876_UART_RX_IRQ);
+		disable_irq(irq_base + PMB8876_UART_RX_IRQ_OFF);
 		rx_enable(port, 0);
 	}
 }
@@ -327,7 +331,7 @@ static void pmb8876uart_enable_ms(struct uart_port *port)
 static unsigned int pmb8876uart_tx_empty(struct uart_port *port)
 {
 	int fc = UART_FCSTAT(port);
-    return (fc & ISR_TB) == 0? TIOCSER_TEMT : 0;
+	return (fc & ISR_TB) == 0? TIOCSER_TEMT : 0;
 }
 
 
@@ -338,19 +342,19 @@ static irqreturn_t pmb8876uart_linest_handler(int irq, void *dev_id)
 	unsigned int lsr, tmp, ch = 1;
 	
 	spin_lock(&port->lock);
-	__raw_writel(ICR_ERR, (void *)PMB8876_USART0_ICR(port->mapbase));
+	__raw_writel(ICR_ERR, (void *)PMB8876_USART_ICR(port->mapbase));
 	
 	lsr = UART_CON(port);
 	if( lsr & CON_OE ) {
-		tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
-		__raw_writel(tmp | WHBCON_CLROE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+		tmp = __raw_readl((void *)PMB8876_USART_WHBCON(port->mapbase));
+		__raw_writel(tmp | WHBCON_CLROE, (void *)PMB8876_USART_WHBCON(port->mapbase));
 		ch = 0;
 		port->icount.overrun++;
 	}
 	
 	if( lsr & CON_FE ) {
-		tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
-		__raw_writel(tmp | WHBCON_CLRFE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+		tmp = __raw_readl((void *)PMB8876_USART_WHBCON(port->mapbase));
+		__raw_writel(tmp | WHBCON_CLRFE, (void *)PMB8876_USART_WHBCON(port->mapbase));
 		ch = 0;
 		port->icount.frame++;
 	}
@@ -372,8 +376,10 @@ static irqreturn_t pmb8876uart_rx_chars(int irq, void *dev_id)
 	spin_lock(&port->lock);
 	
 	/* reset the RX flag interrupt */
-	__raw_writel(ICR_RX | ICR_ERR, (void *)PMB8876_USART0_ICR(port->mapbase));
+	__raw_writel(ICR_RX | ICR_ERR, (void *)PMB8876_USART_ICR(port->mapbase));
 	
+	if( port->line == 1 )
+	    pr_info("RX UART1 work!\n");
 	
 	while( ((status = UART_FSTAT(port)) & FSTAT_RXFFL) )
 	{
@@ -385,14 +391,14 @@ static irqreturn_t pmb8876uart_rx_chars(int irq, void *dev_id)
 		
 		lsr = UART_CON(port);
 		if( lsr & CON_OE ) {
-			tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
-			__raw_writel(tmp | WHBCON_CLROE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+			tmp = __raw_readl((void *)PMB8876_USART_WHBCON(port->mapbase));
+			__raw_writel(tmp | WHBCON_CLROE, (void *)PMB8876_USART_WHBCON(port->mapbase));
 			port->icount.overrun++;
 		}
 		
 		if( lsr & CON_FE ) {
-			tmp = __raw_readl((void *)PMB8876_USART0_WHBCON(port->mapbase));
-			__raw_writel(tmp | WHBCON_CLRFE, (void *)PMB8876_USART0_WHBCON(port->mapbase));
+			tmp = __raw_readl((void *)PMB8876_USART_WHBCON(port->mapbase));
+			__raw_writel(tmp | WHBCON_CLRFE, (void *)PMB8876_USART_WHBCON(port->mapbase));
 			port->icount.frame++;
 		}
 
@@ -408,7 +414,7 @@ ignore_char:;
 	tty_flip_buffer_push(&port->state->port);
 	
 	if( (UART_FSTAT(port) & FSTAT_RXFFL) )
-		__raw_writel(ISR_RX, (void *)PMB8876_USART0_ISR(port->mapbase));
+		__raw_writel(ISR_RX, (void *)PMB8876_USART_ISR(port->mapbase));
 	
 	spin_unlock(&port->lock);
 	
@@ -421,6 +427,9 @@ static irqreturn_t pmb8876uart_tx_chars(int irq, void *dev_id)
 {
 	struct uart_port *port = dev_id;
 	struct circ_buf *xmit = &port->state->xmit;
+	
+	if( port->line == 1 )
+	    pr_info("TX UART1 work!\n");
 
 	spin_lock(&port->lock);
 	
@@ -461,37 +470,33 @@ static irqreturn_t pmb8876uart_tx_chars(int irq, void *dev_id)
 static unsigned int pmb8876uart_get_mctrl(struct uart_port *port)
 {
 	unsigned int result = 0;
-	/*unsigned int status;
+	unsigned int status;
 
-	status = UART_GET_MSR(port);
-	if (status & URMS_URDCD)
-		result |= TIOCM_CAR;
-	if (status & URMS_URDSR)
-		result |= TIOCM_DSR;
-	if (status & URMS_URCTS)
+	status = readl((void *)PMB8876_USART_FCSTAT(port->mapbase));
+	if (status & FCSTAT_CTS)
 		result |= TIOCM_CTS;
-	if (status & URMS_URRI)
-		result |= TIOCM_RI;*/
+	if (status & FCSTAT_RTS)
+		result |= TIOCM_RTS;
 
 	return result;
 }
 
 static void pmb8876uart_set_mctrl(struct uart_port *port, u_int mctrl)
 {
-	/*unsigned int mcr;
+	unsigned int mcr;
 
-	mcr = UART_GET_MCR(port);
+	mcr = readl((void *)PMB8876_USART_FCCON(port->mapbase));
+	if (mctrl & TIOCM_CTS)
+		mcr |= FCCON_CTSEN;
+	else
+		mcr &= ~FCCON_CTSEN;
+
 	if (mctrl & TIOCM_RTS)
-		mcr |= URMC_URRTS;
+		mcr |= FCCON_RTSEN;
 	else
-		mcr &= ~URMC_URRTS;
+		mcr &= ~FCCON_RTSEN;
 
-	if (mctrl & TIOCM_DTR)
-		mcr |= URMC_URDTR;
-	else
-		mcr &= ~URMC_URDTR;
-
-	UART_PUT_MCR(port, mcr);*/
+	//writel(mcr, (void *)PMB8876_USART_FCCON(port->mapbase));
 }
 
 static void pmb8876uart_break_ctl(struct uart_port *port, int break_state)
@@ -508,73 +513,103 @@ static void pmb8876uart_break_ctl(struct uart_port *port, int break_state)
 	UART_PUT_LCR(port, lcr);*/
 }
 
-
 static int pmb8876uart_startup(struct uart_port *port)
 {
+	static const char uart0_tx[] = "UART0 TX";
+	static const char uart0_rx[] = "UART0 RX";
+	static const char uart0_ls[] = "UART0 LineStatus";
+	
+	static const char uart1_tx[] = "UART1 TX";
+	static const char uart1_rx[] = "UART1 RX";
+	static const char uart1_ls[] = "UART1 LineStatus";
+	
+	const char *uart_tx, *uart_rx, *uart_ls;
+	
 	struct pmb8876_usrptr *usrptr;
 	int retval = 0;
 	unsigned int conr = 0;
+	
+	u32 irq_base = port->irq;
 
 	/* setup irq hardware priority */
-	pmb8876_set_irq_priority(PMB8876_UART_LS_IRQ, 0xa);
-	pmb8876_set_irq_priority(PMB8876_UART_TX_IRQ, 0xa);
-	pmb8876_set_irq_priority(PMB8876_UART_RX_IRQ, 0x1);
+	pmb8876_set_irq_priority(irq_base + PMB8876_UART_TX_IRQ_OFF, 0xa);
+	pmb8876_set_irq_priority(irq_base + PMB8876_UART_RX_IRQ_OFF, 0xa);
+	pmb8876_set_irq_priority(irq_base + PMB8876_UART_LS_IRQ_OFF, 0x1);
 	
 	/* change type of tx irq */
-	irq_modify_status(PMB8876_UART_TX_IRQ, IRQ_NOREQUEST, IRQ_NOAUTOEN);
+	irq_modify_status(irq_base + PMB8876_UART_TX_IRQ_OFF, IRQ_NOREQUEST, IRQ_NOAUTOEN);
 	
 	/* reset */
 	tx_enable(port, 0);
 	rx_enable(port, 1);
 	ms_enable(port, 1);
+
+	if( irq_base == PMB8876_UART0_TX_IRQ ) {
+	    uart_tx = (const char *)uart0_tx;
+	    uart_rx = (const char *)uart0_rx;
+	    uart_ls = (const char *)uart0_ls;
+	} else {
+	    uart_tx = (const char *)uart1_tx;
+	    uart_rx = (const char *)uart1_rx;
+	    uart_ls = (const char *)uart1_ls;
+	}
+	
+	pr_info("Register UART%d irqs: TX %d, RX %d, LS %d\n", port->line,
+	    irq_base + PMB8876_UART_TX_IRQ_OFF,
+	    irq_base + PMB8876_UART_RX_IRQ_OFF,
+	    irq_base + PMB8876_UART_LS_IRQ_OFF
+	);
 	
 	// fixme
 	usrptr = port->private_data = kmalloc(sizeof (struct pmb8876_usrptr), GFP_KERNEL);
 	if( usrptr ) usrptr->baudrate = -1;
 	
+	__raw_writel((1 << 8) | 8, (void *)PMB8876_USART_CLC(port->mapbase));
+	
+	pr_info("UART%d clc: %X\n", port->line, readl((void *)PMB8876_USART_CLC(port->mapbase)));
+	
 	/* set async mode */
-	conr = (__raw_readl( (void *)PMB8876_USART0_CON(port->mapbase) ));
-	__raw_writel( (conr & (~CON_MODE_MASK)) | 1 | CON_OEN | CON_FEN, (void *)PMB8876_USART0_CON(port->mapbase) );
+	conr = (__raw_readl( (void *)PMB8876_USART_CON(port->mapbase) ));
+	__raw_writel( (conr & (~CON_MODE_MASK)) | 1 | CON_OEN | CON_FEN, (void *)PMB8876_USART_CON(port->mapbase) );
 	
 	/* enable RX/TX fifo's with interrupt at first byte placed in buffer */
-	__raw_writel( (RXFCON_RXFEN | RXFCON_RXFITL(1)), (void *)PMB8876_USART0_RXFCON(port->mapbase) );
-	__raw_writel( (TXFCON_TXFEN | TXFCON_TXFITL(1)), (void *)PMB8876_USART0_TXFCON(port->mapbase) );
+	__raw_writel( (RXFCON_RXFEN | RXFCON_RXFITL(1)), (void *)PMB8876_USART_RXFCON(port->mapbase) );
+	__raw_writel( (TXFCON_TXFEN | TXFCON_TXFITL(1)), (void *)PMB8876_USART_TXFCON(port->mapbase) );
 	
 	/* unmask rx/tx/err interrupt */
-	__raw_writel( (ISR_RX | ISR_TX | ISR_ERR), (void *)PMB8876_USART0_IMSC(port->mapbase) );
+	__raw_writel( (ISR_RX | ISR_TX | ISR_ERR), (void *)PMB8876_USART_IMSC(port->mapbase) );
 	
 	
 	/*
 	 * Allocate the IRQ
 	 */
-	retval = request_irq(PMB8876_UART_TX_IRQ, pmb8876uart_tx_chars, 0, "UART TX", port);
+	retval = request_irq(irq_base + PMB8876_UART_TX_IRQ_OFF, pmb8876uart_tx_chars, 0, uart_tx, port);
 	if (retval) {
 		pr_err("Failed to request TX irq: %d\n", retval);
 		goto err_tx;
 	}
 	
-	retval = request_irq(PMB8876_UART_RX_IRQ, pmb8876uart_rx_chars, 0, "UART RX", port);
+	retval = request_irq(irq_base + PMB8876_UART_RX_IRQ_OFF, pmb8876uart_rx_chars, 0, uart_rx, port);
 	if (retval) {
 		pr_err("Failed to request RX irq: %d\n", retval);
 		goto err_rx;
 	}
 	
-	retval = request_irq(PMB8876_UART_LS_IRQ, pmb8876uart_linest_handler, 0, "UART LineStatus", port);
+	retval = request_irq(irq_base + PMB8876_UART_LS_IRQ_OFF, pmb8876uart_linest_handler, 0, uart_ls, port);
 	if (retval)
 		goto err_ls;
 
 	/*retval = request_irq(PMB8876_IRQ_UART_MODEM_STATUS, pmb8876uart_modem_status, 0, "UART ModemStatus", port);
 	if (retval)
 		goto err_ms;*/
-
 	return 0;
 
 //err_ms:
-	//free_irq(PMB8876_UART_LS_IRQ, port);
+	//free_irq(irq_base + PMB8876_UART_LS_IRQ_OFF, port);
 err_ls:
-	free_irq(PMB8876_UART_RX_IRQ, port);
+	free_irq(irq_base + PMB8876_UART_RX_IRQ_OFF, port);
 err_rx:
-	free_irq(PMB8876_UART_TX_IRQ, port);
+	free_irq(irq_base + PMB8876_UART_TX_IRQ_OFF, port);
 err_tx:
 	return retval;
 }
@@ -582,13 +617,16 @@ err_tx:
 static void pmb8876uart_shutdown(struct uart_port *port)
 {
 	struct pmb8876_usrptr *usrptr = port->private_data;
+	u32 irq_base = port->irq;
 	
 	/* mask rx/tx interrupt */
-	__raw_writel( 0, (void *)PMB8876_USART0_IMSC(port->mapbase) );
+	__raw_writel( 0, (void *)PMB8876_USART_IMSC(port->mapbase) );
 	
-	free_irq(PMB8876_UART_RX_IRQ, port);
-	free_irq(PMB8876_UART_TX_IRQ, port);
-	free_irq(PMB8876_UART_LS_IRQ, port);
+	pr_info("-> Shutdown %d\n", irq_base);
+	
+	free_irq(irq_base + PMB8876_UART_RX_IRQ_OFF, port);
+	free_irq(irq_base + PMB8876_UART_TX_IRQ_OFF, port);
+	free_irq(irq_base + PMB8876_UART_LS_IRQ_OFF, port);
 	//free_irq(PMB8876_IRQ_UART_MODEM_STATUS, port);
 	
 	if( usrptr ) kfree(usrptr);
@@ -617,9 +655,13 @@ static void pmb8876uart_set_termios(struct uart_port *port, struct ktermios *ter
 			return;
 		}
 			
-		pr_info("ttyAM0: Setting baudrate %d\n", baud);
-		//__raw_writel( ((bgfd >> 16)), (void *)PMB8876_USART0_BG(port->mapbase) );
-		//__raw_writel( ((bgfd << 16) >> 16), (void *)PMB8876_USART0_FDV(port->mapbase) );
+		pr_info("ttyAM%d: Setting baudrate %d\n", 
+			port->irq == PMB8876_UART0_TX_IRQ? 0 : 1, baud);
+		
+		if( port->irq == PMB8876_UART1_TX_IRQ ) {
+		    __raw_writel( ((bgfd >> 16)), (void *)PMB8876_USART_BG(port->mapbase) );
+		    __raw_writel( ((bgfd << 16) >> 16), (void *)PMB8876_USART_FDV(port->mapbase) );
+		}
 	}
 	
 	
@@ -707,24 +749,26 @@ static struct uart_port pmb8876uart_ports[] = {
 		.membase	= (void *)PMB8876_USART0_BASE,
 		.mapbase	= PMB8876_USART0_BASE,
 		.iotype		= SERIAL_IO_MEM,
-		.irq		= PMB8876_UART_TX_IRQ,
+		.irq		= PMB8876_UART0_TX_IRQ,
 		.uartclk	= PMB8876_CLOCK_RATE * 16,
 		.fifosize	= PMB8876_UART_FIFO_SIZE,
 		.ops		= &pmb8876uart_pops,
 		.flags		= UPF_BOOT_AUTOCONF,
 		.line		= 0,
+		.type		= PORT_PMB8876,
 	},
 	
 	{
 		.membase	= (void *)PMB8876_USART1_BASE,
 		.mapbase	= PMB8876_USART1_BASE,
 		.iotype		= SERIAL_IO_MEM,
-		.irq		= PMB8876_UART_TX_IRQ,
+		.irq		= PMB8876_UART1_TX_IRQ,
 		.uartclk	= PMB8876_CLOCK_RATE * 16,
 		.fifosize	= PMB8876_UART_FIFO_SIZE,
 		.ops		= &pmb8876uart_pops,
-		.flags		= UPF_BOOT_AUTOCONF,
+		.flags		= UPF_BOOT_AUTOCONF | UPF_IOREMAP | UPF_LOW_LATENCY,
 		.line		= 1,
+		.type		= PORT_PMB8876,
 	}
 };
 
@@ -739,7 +783,7 @@ static void pmb8876_console_putchar(struct uart_port *port, int ch)
 	
 	UART_PUT_CHAR(port, ch);
 	while( !(UART_FCSTAT(port) & ICR_TB) ) cpu_relax();
-	__raw_writel( ICR_TB, (void *)PMB8876_USART0_ICR(port->mapbase) );
+	__raw_writel( ICR_TB, (void *)PMB8876_USART_ICR(port->mapbase) );
 	
 	local_irq_restore(flags);
 }

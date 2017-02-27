@@ -167,6 +167,12 @@ config BACKLIGHT_CLASS_DEVICE
 
 if BACKLIGHT_CLASS_DEVICE
 
+config BACKLIGHT_SEL71
+	bool "Siemens EL71 backlight control"
+	depends on I2C
+	help
+	  This provides a backlight control for Siemens EL71
+    
 config BACKLIGHT_ATMEL_LCDC
 	bool "Atmel LCDC Contrast-as-Backlight control"
 	depends on FB_ATMEL
