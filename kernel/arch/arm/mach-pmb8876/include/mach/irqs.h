@@ -8,8 +8,9 @@
 #define PMB8876_IRQ_ADDR(n) 		((void *)PMB8876_IRQ_BASE + ((n) * 4))
 #define PMB8876_IRQ_MASK		0x0
 
-
 #define PMB8876_MMCI_IRQ		0x94
+
+#define PMB8876_DMA_IRQ		0x23
 
 #define PMB8876_UART0_TX_IRQ		4
 #define PMB8876_UART0_RX_IRQ		6

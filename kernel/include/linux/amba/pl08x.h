@@ -93,6 +93,8 @@ struct pl08x_platform_data {
 	void (*put_xfer_signal)(const struct pl08x_channel_data *, int);
 	u8 lli_buses;
 	u8 mem_buses;
+	const struct dma_slave_map *slave_map;
+	int slave_map_len;
 };
 
 #ifdef CONFIG_AMBA_PL08X
