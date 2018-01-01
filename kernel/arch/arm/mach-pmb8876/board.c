@@ -97,9 +97,9 @@ asmlinkage void pmb8876_handle_irq(struct pt_regs *regs)
 {
     int irqn = readl((void *)0xF280001C);
     
-    /*if( irqn > 7 && irqn != 0x77 ) {
+    if( irqn > 7 && irqn != 0x77 && irqn != 148 ) {
         pr_info("irq %d fired!\n", irqn);
-    }*/
+    }
     
     handle_IRQ(irqn, regs);
 }

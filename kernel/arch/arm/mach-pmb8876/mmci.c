@@ -37,7 +37,7 @@ static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {PMB8876_MM
 static int __init pmb8876_mmci_init(void) {
 	struct clk *clk_mmci;
 	
-	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, /*4800000*/48000000);
+	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, /*4800000*/4800000);
 	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
 	gpio_request(GPIO_MMC_CD, "MMCI_CD");

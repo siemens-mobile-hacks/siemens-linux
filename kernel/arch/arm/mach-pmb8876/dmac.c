@@ -64,6 +64,7 @@ static int __init pmb8876_dma_init(void) {
 	pr_info("pmb8876_dma_init - start\n");
 	
 	writel(0, (void *) 0xF4400084);
+	writel(1 << 8, (void *) 0xF3000000);
 	
 	pmb8876_set_irq_priority(PMB8876_DMA_IRQ, 0x8);
 	

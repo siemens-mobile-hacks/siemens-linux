@@ -49,4 +49,4 @@ static int __init pmb8876_test_i2c_bt(void)
 	
 	return 0;
 }
-//subsys_initcall_sync(pmb8876_test_i2c_bt);
+subsys_initcall_sync(pmb8876_test_i2c_bt);

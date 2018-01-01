@@ -90,10 +90,10 @@ void __init pmb8876_init_irq(void)
 		clr = IRQ_NOREQUEST;
 		
 		/* mask irq */
-		//if( i < 8 && i== 0x77 )
+		if( i < 8 && i == 0x77 )
 		    writel(PMB8876_IRQ_MASK, PMB8876_IRQ_ADDR(i));
-		/*else
-		    writel(1, PMB8876_IRQ_ADDR(i));*/
+		else
+		    writel(1, PMB8876_IRQ_ADDR(i));
 		
 		irq_set_chip_and_handler(i, &ext_chip, handle_level_irq);
 		irq_modify_status(i, clr, 0);
