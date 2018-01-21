@@ -32,41 +32,41 @@ static struct pl08x_channel_data pmb8876_dma0_info[] = {
 		.bus_id = "mmci0_tx",
 		.min_signal = 1,
 		.max_signal = 1,
-		.periph_buses = PL08X_AHB1,
+		.periph_buses = PL08X_AHB2,
 	}, 
 	{
 		.bus_id = "mmci0_rx",
-		.min_signal = 2,
-		.max_signal = 2,
-		.periph_buses = PL08X_AHB1,
+		.min_signal = 0x08,
+		.max_signal = 0x08,
+		.periph_buses = PL08X_AHB2
 	}
 };
 
 static const struct dma_slave_map pmb8876_dma0_slave_map[] = {
-	{ "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
-	{ "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
+	// { "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
+	// { "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
 };
 
 struct pl08x_platform_data dma0_plat_data = {
-	.lli_buses = PL08X_AHB1,
-	.mem_buses = PL08X_AHB1,
-	.get_xfer_signal = pl08x_get_xfer_signal,
-	.put_xfer_signal = pl08x_put_xfer_signal,
+	.lli_buses = PL08X_AHB2,
+	.mem_buses = PL08X_AHB2,
 	.slave_channels = pmb8876_dma0_info,
 	.num_slave_channels = ARRAY_SIZE(pmb8876_dma0_info),
 	.slave_map = pmb8876_dma0_slave_map,
 	.slave_map_len = ARRAY_SIZE(pmb8876_dma0_slave_map),
 };
 
-static AMBA_APB_DEVICE(dma0, "pmb8876:dma0", 0x0a141080, 0xF3000000, {PMB8876_DMA_IRQ}, &dma0_plat_data);
+#define ___BRACES(...) {__VA_ARGS__}
+
+static AMBA_APB_DEVICE(dma0, "pmb8876:dma0", 0x00041080, 0xF3000000, ___BRACES(0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B), &dma0_plat_data);
 
 static int __init pmb8876_dma_init(void) {
+	int i;
+	
 	pr_info("pmb8876_dma_init - start\n");
 	
-	writel(0, (void *) 0xF4400084);
-	writel(1 << 8, (void *) 0xF3000000);
-	
-	pmb8876_set_irq_priority(PMB8876_DMA_IRQ, 0x8);
+	for (i = 0x23; i <= 0x2B; ++i)
+		pmb8876_set_irq_priority(i, 1);
 	
 	amba_device_register(&dma0_device, &iomem_resource);
 	

@@ -2355,11 +2355,15 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
 	writel(0x000000FF, pl08x->base + PL080_ERR_CLEAR);
 	writel(0x000000FF, pl08x->base + PL080_TC_CLEAR);
 
-	ret = request_irq(adev->irq[0], pl08x_irq, 0, DRIVER_NAME, pl08x);
-	if (ret) {
-		dev_err(&adev->dev, "%s failed to request interrupt %d\n",
-			__func__, adev->irq[0]);
-		goto out_no_irq;
+	for (i = 0; i < AMBA_NR_IRQS; ++i) {
+		if (adev->irq[i]) {
+			ret = request_irq(adev->irq[i], pl08x_irq, 0, DRIVER_NAME, pl08x);
+			if (ret) {
+				dev_err(&adev->dev, "%s failed to request interrupt %d\n",
+					__func__, adev->irq[i]);
+				goto out_no_irq;
+			}
+		}
 	}
 
 	/* Initialize physical channels */
@@ -2450,8 +2454,11 @@ out_no_slave:
 out_no_memcpy:
 	kfree(pl08x->phy_chans);
 out_no_phychans:
-	free_irq(adev->irq[0], pl08x);
 out_no_irq:
+	for (i = 0; i < AMBA_NR_IRQS; ++i) {
+		if (adev->irq[i])
+			free_irq(adev->irq[i], pl08x);
+	}
 	iounmap(pl08x->base);
 out_no_ioremap:
 	dma_pool_destroy(pl08x->pool);
