@@ -10,6 +10,7 @@ config MACH_PMB8876
 	select GENERIC_CLOCKEVENTS
 	select ARM_AMBA
 	select COMMON_CLK
+	select GPIOLIB
 	
 	help
 	  Say 'Y' here if you want your kernel to support the
@@ -24,9 +25,14 @@ config DEBUG_LL_PMB8876
 	help
 	  Adds low level uart macro`s that uses UART directly for low-level debug
 
+config DEBUG_PMB8876_TEST_BLUETOOTH
+	bool "Enable test bluetooth"
+	select I2C
+	help
+	 For bt debug
+
 config DEBUG_PMB8876_TEST_DIALOG_I2C_DEVICES
 	bool "Test Dialog/Twigo I2C devices"
-	select GPIOLIB
 	select I2C
 	help
 	 For i2c debug
