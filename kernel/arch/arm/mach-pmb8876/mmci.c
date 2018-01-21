@@ -31,13 +31,13 @@ static struct mmci_platform_data mmci_data = {
 	.gpio_wp		= -1
 };
 
-static AMBA_APB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {PMB8876_MMCI_IRQ}, &mmci_data);
+static AMBA_AHB_DEVICE(mmc0, "pmb8876:mmc0", 0x00041180, 0xF7301000, {PMB8876_MMCI_IRQ}, &mmci_data);
 
 
 static int __init pmb8876_mmci_init(void) {
 	struct clk *clk_mmci;
 	
-	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, /*4800000*/4800000);
+	clk_mmci = clk_register_fixed_rate(NULL, "clk_mmci", NULL, 0, 2600000);
 	clk_register_clkdev(clk_mmci, NULL, "pmb8876:mmc0");
 	
 	gpio_request(GPIO_MMC_CD, "MMCI_CD");
@@ -46,7 +46,7 @@ static int __init pmb8876_mmci_init(void) {
 	gpio_request(GPIO_MMC_CMD, "MMCI_CMD");
 	gpio_request(GPIO_MMC_VCC_EN, "MMCI_VCC_EN");
 	
-	writel(1024, (void *)0xF7300000);
+	writel(0x100, (void *)0xF7300000);
 	pmb8876_set_irq_priority(PMB8876_MMCI_IRQ, 1);
 	
 	amba_device_register(&mmc0_device, &iomem_resource);
