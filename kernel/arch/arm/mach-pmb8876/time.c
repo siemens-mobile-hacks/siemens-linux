@@ -24,8 +24,8 @@
 
 
 /* register */
-#define PMB8876_GSM_TPU_CLC		0xF6400000
-#define PMB8876_GSM_TPU_CON		0xF64000F8
+#define PMB8876_GSM_TPU_CLC			0xF6400000
+#define PMB8876_GSM_TPU_CON			0xF64000F8
 
 /* flags */
 #define PMB8876_GSM_TPU_CON_RESET	0x4000
@@ -37,21 +37,21 @@
 
 
 /* STM */
-#define PMB8876_STM_CLC			0xF4B00000
-#define PMB8876_STM_ID 			0xF4B00008
-#define PMB8876_STM_0			0xF4B00010
+#define PMB8876_STM_CLC				0xF4B00000
+#define PMB8876_STM_ID 				0xF4B00008
+#define PMB8876_STM_0				0xF4B00010
 
 #define PMB8876_STM_CLC_RMC(x)		((x << 8) & 0x7)
 
 #define PMB8876_STM_CLOCK_FREQ		26000000
 
 
-#define MAX_DELTA			( 32767 )
-#define MIN_DELTA			( 10 )
+#define MAX_DELTA					( 32767 )
+#define MIN_DELTA					( 10 )
 
 
-#define GSM_CON()			readl((void *)PMB8876_GSM_TPU_CON)
-#define GSM_CON_SET(x)			writel(x, (void *)PMB8876_GSM_TPU_CON);
+#define GSM_CON()					readl((void *)PMB8876_GSM_TPU_CON)
+#define GSM_CON_SET(x)				writel(x, (void *)PMB8876_GSM_TPU_CON);
 
 
 
@@ -138,9 +138,9 @@ static u64 read_sched_clock(void)
     return cyc;
 }
 
-static cycle_t clksrc_read(struct clocksource *cs)
+static u64 clksrc_read(struct clocksource *cs)
 {
-    return (cycle_t)read_sched_clock();
+    return read_sched_clock();
 }
 
 static struct clocksource cksrc = {

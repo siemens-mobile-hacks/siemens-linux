@@ -19,6 +19,7 @@
 #include <linux/pinctrl/pinconf.h>
 #include <linux/pinctrl/pinconf-generic.h>
 
+#include "../core.h"
 #include "pinctrl-intel.h"
 
 /* Offset from regs */
@@ -86,6 +87,7 @@ struct intel_pinctrl_context {
  * @communities: All communities in this pin controller
  * @ncommunities: Number of communities in this pin controller
  * @context: Configuration saved over system sleep
+ * @irq: pinctrl/GPIO chip irq number
  */
 struct intel_pinctrl {
 	struct device *dev;
@@ -97,6 +99,7 @@ struct intel_pinctrl {
 	struct intel_community *communities;
 	size_t ncommunities;
 	struct intel_pinctrl_context context;
+	int irq;
 };
 
 #define pin_to_padno(c, p)	((p) - (c)->pin_base)
@@ -350,6 +353,21 @@ static int intel_pinmux_set_mux(struct pinctrl_dev *pctldev, unsigned function,
 	return 0;
 }
 
+static void __intel_gpio_set_direction(void __iomem *padcfg0, bool input)
+{
+	u32 value;
+
+	value = readl(padcfg0);
+	if (input) {
+		value &= ~PADCFG0_GPIORXDIS;
+		value |= PADCFG0_GPIOTXDIS;
+	} else {
+		value &= ~PADCFG0_GPIOTXDIS;
+		value |= PADCFG0_GPIORXDIS;
+	}
+	writel(value, padcfg0);
+}
+
 static int intel_gpio_request_enable(struct pinctrl_dev *pctldev,
 				     struct pinctrl_gpio_range *range,
 				     unsigned pin)
@@ -372,10 +390,10 @@ static int intel_gpio_request_enable(struct pinctrl_dev *pctldev,
 	/* Disable SCI/SMI/NMI generation */
 	value &= ~(PADCFG0_GPIROUTIOXAPIC | PADCFG0_GPIROUTSCI);
 	value &= ~(PADCFG0_GPIROUTSMI | PADCFG0_GPIROUTNMI);
-	/* Disable TX buffer and enable RX (this will be input) */
-	value &= ~PADCFG0_GPIORXDIS;
-	value |= PADCFG0_GPIOTXDIS;
 	writel(value, padcfg0);
+
+	/* Disable TX buffer and enable RX (this will be input) */
+	__intel_gpio_set_direction(padcfg0, true);
 
 	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
 
@@ -389,18 +407,11 @@ static int intel_gpio_set_direction(struct pinctrl_dev *pctldev,
 	struct intel_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctldev);
 	void __iomem *padcfg0;
 	unsigned long flags;
-	u32 value;
 
 	raw_spin_lock_irqsave(&pctrl->lock, flags);
 
 	padcfg0 = intel_get_padcfg(pctrl, pin, PADCFG0);
-
-	value = readl(padcfg0);
-	if (input)
-		value |= PADCFG0_GPIOTXDIS;
-	else
-		value &= ~PADCFG0_GPIOTXDIS;
-	writel(value, padcfg0);
+	__intel_gpio_set_direction(padcfg0, input);
 
 	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
 
@@ -793,38 +804,12 @@ static int intel_gpio_irq_wake(struct irq_data *d, unsigned int on)
 {
 	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
 	struct intel_pinctrl *pctrl = gpiochip_get_data(gc);
-	const struct intel_community *community;
 	unsigned pin = irqd_to_hwirq(d);
-	unsigned padno, gpp, gpp_offset;
-	unsigned long flags;
-	u32 gpe_en;
 
-	community = intel_get_community(pctrl, pin);
-	if (!community)
-		return -EINVAL;
-
-	raw_spin_lock_irqsave(&pctrl->lock, flags);
-
-	padno = pin_to_padno(community, pin);
-	gpp = padno / community->gpp_size;
-	gpp_offset = padno % community->gpp_size;
-
-	/* Clear the existing wake status */
-	writel(BIT(gpp_offset), community->regs + GPI_GPE_STS + gpp * 4);
-
-	/*
-	 * The controller will generate wake when GPE of the corresponding
-	 * pad is enabled and it is not routed to SCI (GPIROUTSCI is not
-	 * set).
-	 */
-	gpe_en = readl(community->regs + GPI_GPE_EN + gpp * 4);
 	if (on)
-		gpe_en |= BIT(gpp_offset);
+		enable_irq_wake(pctrl->irq);
 	else
-		gpe_en &= ~BIT(gpp_offset);
-	writel(gpe_en, community->regs + GPI_GPE_EN + gpp * 4);
-
-	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
+		disable_irq_wake(pctrl->irq);
 
 	dev_dbg(pctrl->dev, "%sable wake for pin %u\n", on ? "en" : "dis", pin);
 	return 0;
@@ -905,6 +890,7 @@ static int intel_gpio_probe(struct intel_pinctrl *pctrl, int irq)
 	pctrl->chip.label = dev_name(pctrl->dev);
 	pctrl->chip.parent = pctrl->dev;
 	pctrl->chip.base = -1;
+	pctrl->irq = irq;
 
 	ret = gpiochip_add_data(&pctrl->chip, pctrl);
 	if (ret) {
@@ -933,7 +919,7 @@ static int intel_gpio_probe(struct intel_pinctrl *pctrl, int irq)
 	}
 
 	ret = gpiochip_irqchip_add(&pctrl->chip, &intel_gpio_irqchip, 0,
-				   handle_simple_irq, IRQ_TYPE_NONE);
+				   handle_bad_irq, IRQ_TYPE_NONE);
 	if (ret) {
 		dev_err(pctrl->dev, "failed to add irqchip\n");
 		goto fail;
@@ -1079,6 +1065,26 @@ int intel_pinctrl_remove(struct platform_device *pdev)
 EXPORT_SYMBOL_GPL(intel_pinctrl_remove);
 
 #ifdef CONFIG_PM_SLEEP
+static bool intel_pinctrl_should_save(struct intel_pinctrl *pctrl, unsigned pin)
+{
+	const struct pin_desc *pd = pin_desc_get(pctrl->pctldev, pin);
+
+	if (!pd || !intel_pad_usable(pctrl, pin))
+		return false;
+
+	/*
+	 * Only restore the pin if it is actually in use by the kernel (or
+	 * by userspace). It is possible that some pins are used by the
+	 * BIOS during resume and those are not always locked down so leave
+	 * them alone.
+	 */
+	if (pd->mux_owner || pd->gpio_owner ||
+	    gpiochip_line_is_irq(&pctrl->chip, pin))
+		return true;
+
+	return false;
+}
+
 int intel_pinctrl_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -1092,7 +1098,7 @@ int intel_pinctrl_suspend(struct device *dev)
 		const struct pinctrl_pin_desc *desc = &pctrl->soc->pins[i];
 		u32 val;
 
-		if (!intel_pad_usable(pctrl, desc->number))
+		if (!intel_pinctrl_should_save(pctrl, desc->number))
 			continue;
 
 		val = readl(intel_get_padcfg(pctrl, desc->number, PADCFG0));
@@ -1153,7 +1159,7 @@ int intel_pinctrl_resume(struct device *dev)
 		void __iomem *padcfg;
 		u32 val;
 
-		if (!intel_pad_usable(pctrl, desc->number))
+		if (!intel_pinctrl_should_save(pctrl, desc->number))
 			continue;
 
 		padcfg = intel_get_padcfg(pctrl, desc->number, PADCFG0);

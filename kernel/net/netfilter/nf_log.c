@@ -13,7 +13,6 @@
 /* Internal logging interface, which relies on the real
    LOG target modules */
 
-#define NF_LOG_PREFIXLEN		128
 #define NFLOGGER_NAME_LEN		64
 
 static struct nf_logger __rcu *loggers[NFPROTO_NUMPROTO][NF_LOG_TYPE_MAX] __read_mostly;
@@ -39,12 +38,12 @@ static struct nf_logger *__find_logger(int pf, const char *str_logger)
 	return NULL;
 }
 
-void nf_log_set(struct net *net, u_int8_t pf, const struct nf_logger *logger)
+int nf_log_set(struct net *net, u_int8_t pf, const struct nf_logger *logger)
 {
 	const struct nf_logger *log;
 
-	if (pf == NFPROTO_UNSPEC)
-		return;
+	if (pf == NFPROTO_UNSPEC || pf >= ARRAY_SIZE(net->nf.nf_loggers))
+		return -EOPNOTSUPP;
 
 	mutex_lock(&nf_log_mutex);
 	log = nft_log_dereference(net->nf.nf_loggers[pf]);
@@ -52,6 +51,8 @@ void nf_log_set(struct net *net, u_int8_t pf, const struct nf_logger *logger)
 		rcu_assign_pointer(net->nf.nf_loggers[pf], logger);
 
 	mutex_unlock(&nf_log_mutex);
+
+	return 0;
 }
 EXPORT_SYMBOL(nf_log_set);
 
@@ -420,7 +421,7 @@ static int nf_log_proc_dostring(struct ctl_table *table, int write,
 	char buf[NFLOGGER_NAME_LEN];
 	int r = 0;
 	int tindex = (unsigned long)table->extra1;
-	struct net *net = current->nsproxy->net_ns;
+	struct net *net = table->extra2;
 
 	if (write) {
 		struct ctl_table tmp = *table;
@@ -474,7 +475,6 @@ static int netfilter_log_sysctl_init(struct net *net)
 				 3, "%d", i);
 			nf_log_sysctl_table[i].procname	=
 				nf_log_sysctl_fnames[i];
-			nf_log_sysctl_table[i].data = NULL;
 			nf_log_sysctl_table[i].maxlen = NFLOGGER_NAME_LEN;
 			nf_log_sysctl_table[i].mode = 0644;
 			nf_log_sysctl_table[i].proc_handler =
@@ -483,6 +483,9 @@ static int netfilter_log_sysctl_init(struct net *net)
 				(void *)(unsigned long) i;
 		}
 	}
+
+	for (i = NFPROTO_UNSPEC; i < NFPROTO_NUMPROTO; i++)
+		table[i].extra2 = net;
 
 	net->nf.nf_log_dir_header = register_net_sysctl(net,
 						"net/netfilter/nf_log",

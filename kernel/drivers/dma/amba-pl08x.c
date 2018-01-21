@@ -1793,6 +1793,13 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
 }
 EXPORT_SYMBOL_GPL(pl08x_filter_id);
 
+static bool pl08x_filter_fn(struct dma_chan *chan, void *chan_id)
+{
+	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
+
+	return plchan->cd == chan_id;
+}
+
 /*
  * Just check that the device is there and active
  * TODO: turn this bit on/off depending on the number of physical channels
@@ -1805,13 +1812,6 @@ static void pl08x_ensure_on(struct pl08x_driver_data *pl08x)
 	if (pl08x->vd->nomadik)
 		return;
 	writel(PL080_CONFIG_ENABLE, pl08x->base + PL080_CONFIG);
-}
-
-static bool pl08x_filter_fn(struct dma_chan *chan, void *chan_id)
-{
-	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan); 
-	
-	return plchan->cd == chan_id;
 }
 
 static irqreturn_t pl08x_irq(int irq, void *dev)

@@ -98,6 +98,15 @@ int arch_decode_instruction(struct elf *elf, struct section *sec,
 			*type = INSN_FP_SETUP;
 		break;
 
+	case 0x8d:
+		if (insn.rex_prefix.nbytes &&
+		    insn.rex_prefix.bytes[0] == 0x48 &&
+		    insn.modrm.nbytes && insn.modrm.bytes[0] == 0x2c &&
+		    insn.sib.nbytes && insn.sib.bytes[0] == 0x24)
+			/* lea %(rsp), %rbp */
+			*type = INSN_FP_SETUP;
+		break;
+
 	case 0x90:
 		*type = INSN_NOP;
 		break;
@@ -141,9 +150,9 @@ int arch_decode_instruction(struct elf *elf, struct section *sec,
 		*type = INSN_RETURN;
 		break;
 
-	case 0xc5: /* iret */
 	case 0xca: /* retf */
 	case 0xcb: /* retf */
+	case 0xcf: /* iret */
 		*type = INSN_CONTEXT_SWITCH;
 		break;
 

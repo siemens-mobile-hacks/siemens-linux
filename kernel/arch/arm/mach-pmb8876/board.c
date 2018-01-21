@@ -1,4 +1,5 @@
 #include <linux/module.h>
+#include <generated/mach-types.h>
 
 #include <asm/irq.h>
 #include <asm/mach/arch.h>

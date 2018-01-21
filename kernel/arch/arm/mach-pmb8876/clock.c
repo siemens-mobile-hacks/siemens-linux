@@ -95,83 +95,83 @@ static int pmb8876_current_cpu_clock = 12000;
 /* cpu clock div/mul values list */
 struct PMB8876_Clocks pmb8876_clocks[] = {
     {
-	.rate = 12000,
-	.mul1 = 2,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 6
+        .rate = 12000,
+        .mul1 = 2,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 6
     },
     
     {
-	.rate = 18000,
-	.mul1 = 2,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 4
+        .rate = 18000,
+        .mul1 = 2,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 4
     },
     
     {
-	.rate = 26000,
-	.mul1 = 1,
-	.mul2 = 1,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 26000,
+        .mul1 = 1,
+        .mul2 = 1,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 52000,
-	.mul1 = 2,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 1
+        .rate = 52000,
+        .mul1 = 2,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 1
     },
     
     {
-	.rate = 78000,
-	.mul1 = 2,
-	.mul2 = 1,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 78000,
+        .mul1 = 2,
+        .mul2 = 1,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 104000,
-	.mul1 = 3,
-	.mul2 = 1,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 104000,
+        .mul1 = 3,
+        .mul2 = 1,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 156000,
-	.mul1 = 2,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 156000,
+        .mul1 = 2,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 208000,
-	.mul1 = 3,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 208000,
+        .mul1 = 3,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 260000,
-	.mul1 = 4,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 260000,
+        .mul1 = 4,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 0
     },
     
     {
-	.rate = 312000,
-	.mul1 = 5,
-	.mul2 = 2,
-	.div1 = 1,
-	.div2 = 0
+        .rate = 312000,
+        .mul1 = 5,
+        .mul2 = 2,
+        .div1 = 1,
+        .div2 = 0
     },
 };
 
@@ -286,12 +286,12 @@ int pmb8876_set_cpu_rate(int rate)
     int  i = 0;
     
     for( i = 0; i < ARRAY_SIZE(pmb8876_clocks); i++ ) {
-	if( pmb8876_clocks[i].rate == rate ) {
-	    pmb8876_pll_reclock(pmb8876_clocks[i].mul1, pmb8876_clocks[i].mul2,
-				pmb8876_clocks[i].div1, pmb8876_clocks[i].div2);
-	    pmb8876_current_cpu_clock = rate;
-	    return 0;
-	}
+        if( pmb8876_clocks[i].rate == rate ) {
+            pmb8876_pll_reclock(pmb8876_clocks[i].mul1, pmb8876_clocks[i].mul2,
+                    pmb8876_clocks[i].div1, pmb8876_clocks[i].div2);
+            pmb8876_current_cpu_clock = rate;
+            return 0;
+        }
     }
     
     return -EINVAL;
