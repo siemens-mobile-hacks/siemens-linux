@@ -30,21 +30,21 @@ static void pl08x_put_xfer_signal(const struct pl08x_channel_data *cd, int ch) {
 static struct pl08x_channel_data pmb8876_dma0_info[] = {
 	{
 		.bus_id = "mmci0_tx",
-		.min_signal = 1,
-		.max_signal = 1,
+		.min_signal = 13,
+		.max_signal = 13,
 		.periph_buses = PL08X_AHB2,
 	}, 
 	{
 		.bus_id = "mmci0_rx",
-		.min_signal = 0x08,
-		.max_signal = 0x08,
+		.min_signal = 6,
+		.max_signal = 6,
 		.periph_buses = PL08X_AHB2
 	}
 };
 
 static const struct dma_slave_map pmb8876_dma0_slave_map[] = {
-	// { "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
-	// { "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
+//	{ "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
+//	{ "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
 };
 
 struct pl08x_platform_data dma0_plat_data = {

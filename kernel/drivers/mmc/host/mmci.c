@@ -46,7 +46,7 @@
 
 #define DRIVER_NAME "mmci-pl18x"
 
-static unsigned int fmax = 1300000;
+static unsigned int fmax = 1625000;
 
 /**
  * struct variant_data - MMCI variant-specific quirks
