@@ -19,12 +19,30 @@
 #include <linux/clk-provider.h>
 #include <linux/clkdev.h>
 
+static spinlock_t lock = __SPIN_LOCK_UNLOCKED(x);
+
 static int pl08x_get_xfer_signal(const struct pl08x_channel_data *cd) {
-	return cd->min_signal;
+	unsigned int signal = cd->min_signal, val;
+	unsigned long flags;
+	
+	spin_lock_irqsave(&lock, flags);
+	val = readl((void *) 0xF4400084);
+	val |= 1 << signal;
+	writel(val, (void *) 0xF4400084);
+	spin_unlock_irqrestore(&lock, flags);
+	
+	return signal;
 }
 
-static void pl08x_put_xfer_signal(const struct pl08x_channel_data *cd, int ch) {
+static void pl08x_put_xfer_signal(const struct pl08x_channel_data *cd, int signal) {
+	unsigned int val;
+	unsigned long flags;
 	
+	spin_lock_irqsave(&lock, flags);
+	val = readl((void *) 0xF4400084);
+	val &= ~(1 << signal);
+	writel(val, (void *) 0xF4400084);
+	spin_unlock_irqrestore(&lock, flags);
 }
 
 static struct pl08x_channel_data pmb8876_dma0_info[] = {
@@ -43,8 +61,8 @@ static struct pl08x_channel_data pmb8876_dma0_info[] = {
 };
 
 static const struct dma_slave_map pmb8876_dma0_slave_map[] = {
-//	{ "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
-//	{ "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
+	{ "pmb8876:mmc0", "tx", &pmb8876_dma0_info[0] },
+	{ "pmb8876:mmc0", "rx", &pmb8876_dma0_info[1] },
 };
 
 struct pl08x_platform_data dma0_plat_data = {
@@ -54,6 +72,8 @@ struct pl08x_platform_data dma0_plat_data = {
 	.num_slave_channels = ARRAY_SIZE(pmb8876_dma0_info),
 	.slave_map = pmb8876_dma0_slave_map,
 	.slave_map_len = ARRAY_SIZE(pmb8876_dma0_slave_map),
+	.get_xfer_signal = pl08x_get_xfer_signal,
+	.put_xfer_signal = pl08x_put_xfer_signal,
 };
 
 #define ___BRACES(...) {__VA_ARGS__}
@@ -65,6 +85,7 @@ static int __init pmb8876_dma_init(void) {
 	
 	pr_info("pmb8876_dma_init - start\n");
 	
+	writel(1 << 6, (void *)0xF4400084);
 	for (i = 0x23; i <= 0x2B; ++i)
 		pmb8876_set_irq_priority(i, 1);
 	
